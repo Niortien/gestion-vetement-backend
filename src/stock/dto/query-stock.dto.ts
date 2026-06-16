@@ -4,6 +4,8 @@ import {
   IsBoolean,
   IsDateString,
   IsEnum,
+  IsInt,
+  IsNotEmpty,
   IsOptional,
   IsString,
 } from 'class-validator';
@@ -77,6 +79,7 @@ export class AdjustVarianteStockDto {
   motif?: string;
 
   @ApiPropertyOptional()
-  @IsString()
+  @IsNotEmpty()
+  @IsInt()
   variation!: number;
 }

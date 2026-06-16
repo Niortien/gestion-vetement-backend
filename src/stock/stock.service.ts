@@ -36,13 +36,13 @@ export class StockService {
   }
 
   async listAlertes(): Promise<unknown[]> {
-    return this.prisma.$queryRaw<unknown[]>`
-      SELECT v.*, p.nom as "produitNom"
-      FROM "Variante" v
-      INNER JOIN "Produit" p ON p.id = v."produitId"
-      WHERE v."quantiteStock" <= v."seuilAlerte"
-      ORDER BY v."updatedAt" DESC
-    `;
+    return this.prisma.variante.findMany({
+      where: {
+        quantiteStock: { lte: this.prisma.variante.fields.seuilAlerte },
+      },
+      include: { produit: true },
+      orderBy: { updatedAt: 'desc' },
+    });
   }
 
   async listMouvements(query: QueryMouvementDto): Promise<PageDto<unknown>> {

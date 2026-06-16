@@ -79,9 +79,14 @@ export class VariantesController {
       );
     }
 
+    const type =
+      dto.variation > 0
+        ? TypeMouvementStock.ENTREE
+        : TypeMouvementStock.AJUSTEMENT;
+
     await this.stockMovementService.createMovement({
       varianteId: id,
-      type: TypeMouvementStock.AJUSTEMENT,
+      type,
       quantite: Math.abs(dto.variation),
       userId: user.id,
       motif: dto.motif ?? 'Ajustement manuel',
