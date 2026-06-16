@@ -1,0 +1,110 @@
+import { Injectable } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
+import * as bcrypt from 'bcrypt';
+import { UsersService } from '../users/users.service';
+import { User } from '@prisma/client';
+import {
+  ConflictDomainException,
+  ValidationDomainException,
+} from '../common/exceptions/domain.exception';
+import { ConfigService } from '@nestjs/config';
+
+@Injectable()
+export class AuthService {
+  constructor(
+    private readonly usersService: UsersService,
+    private readonly jwtService: JwtService,
+    private readonly configService: ConfigService,
+  ) {}
+
+  async validateUser(email: string, password: string): Promise<User | null> {
+    const user = await this.usersService.findByEmail(email);
+    if (user && (await bcrypt.compare(password, user.passwordHash))) {
+      return user;
+    }
+    return null;
+  }
+
+  async login(
+    email: string,
+    password: string,
+  ): Promise<{
+    accessToken: string;
+    refreshToken: string;
+    user: { id: string; email: string; role: 'ADMIN' | 'VENDEUR' };
+  }> {
+    const user = await this.validateUser(email, password);
+
+    if (!user) {
+      throw new ValidationDomainException(
+        'Identifiants invalides',
+        'AUTH_INVALID_CREDENTIALS',
+      );
+    }
+
+    const payload = {
+      sub: user.id,
+      email: user.email,
+      role: user.role,
+    };
+
+    return {
+      accessToken: await this.jwtService.signAsync(payload, {
+        secret: this.configService.getOrThrow<string>('jwtSecret', {
+          infer: true,
+        }),
+        expiresIn: '15m',
+      }),
+      refreshToken: await this.jwtService.signAsync(payload, {
+        secret: this.configService.getOrThrow<string>('jwtRefreshSecret', {
+          infer: true,
+        }),
+        expiresIn: '7d',
+      }),
+      user: {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+      },
+    };
+  }
+
+  async refresh(refreshToken: string): Promise<{ accessToken: string }> {
+    try {
+      const payload = await this.jwtService.verifyAsync<{
+        sub: string;
+        email: string;
+        role: 'ADMIN' | 'VENDEUR';
+      }>(refreshToken, {
+        secret: this.configService.getOrThrow<string>('jwtRefreshSecret', {
+          infer: true,
+        }),
+      });
+
+      const accessToken = await this.jwtService.signAsync(
+        {
+          sub: payload.sub,
+          email: payload.email,
+          role: payload.role,
+        },
+        {
+          secret: this.configService.getOrThrow<string>('jwtSecret', {
+            infer: true,
+          }),
+          expiresIn: '15m',
+        },
+      );
+
+      return { accessToken };
+    } catch {
+      throw new ConflictDomainException(
+        'Refresh token invalide',
+        'AUTH_INVALID_REFRESH',
+      );
+    }
+  }
+
+  async logout(): Promise<{ success: boolean }> {
+    return { success: true };
+  }
+}
