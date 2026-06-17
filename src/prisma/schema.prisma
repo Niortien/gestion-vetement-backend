@@ -57,7 +57,7 @@ model ProduitImage {
 model Variante {
   id            String           @id @default(uuid())
   produitId     String
-  taille        TailleVariante
+  taille        String
   couleur       String
   quantiteStock Int
   seuilAlerte   Int
@@ -157,16 +157,6 @@ model Transaction {
 enum UserRole {
   ADMIN
   VENDEUR
-}
-
-enum TailleVariante {
-  XS
-  S
-  M
-  L
-  XL
-  XXL
-  XXXL
 }
 
 enum TypeMouvementStock {

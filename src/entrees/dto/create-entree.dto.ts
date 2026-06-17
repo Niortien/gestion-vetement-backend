@@ -4,16 +4,62 @@ import {
   IsArray,
   IsDecimal,
   IsInt,
+  IsNotEmpty,
   IsOptional,
   IsString,
+  IsUUID,
+  MaxLength,
   Min,
   ValidateNested,
 } from 'class-validator';
 
-class CreateLigneEntreeDto {
+export class NewProduitForEntreeDto {
   @ApiProperty()
   @IsString()
-  varianteId!: string;
+  @IsNotEmpty()
+  nom!: string;
+
+  @ApiProperty()
+  @IsUUID()
+  categorieId!: string;
+
+  @ApiProperty({ example: '12500.00' })
+  @IsDecimal({ decimal_digits: '1,2' })
+  prixVente!: string;
+
+  @ApiProperty({ example: '9000.00' })
+  @IsDecimal({ decimal_digits: '1,2' })
+  prixAchat!: string;
+
+  @ApiProperty({ example: 'M' })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(20)
+  taille!: string;
+
+  @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
+  couleur!: string;
+
+  @ApiPropertyOptional({ minimum: 0 })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  seuilAlerte?: number;
+}
+
+class CreateLigneEntreeDto {
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  varianteId?: string;
+
+  @ApiPropertyOptional({ type: NewProduitForEntreeDto })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => NewProduitForEntreeDto)
+  newProduit?: NewProduitForEntreeDto;
 
   @ApiProperty({ minimum: 1 })
   @IsInt()

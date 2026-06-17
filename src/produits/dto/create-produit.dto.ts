@@ -2,21 +2,23 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsArray,
   IsDecimal,
-  IsEnum,
   IsInt,
+  IsNotEmpty,
   IsOptional,
   IsString,
   IsUrl,
+  MaxLength,
   Min,
   ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { TailleVariante } from '@prisma/client';
 
 class CreateVarianteDto {
-  @ApiProperty({ enum: TailleVariante })
-  @IsEnum(TailleVariante)
-  taille!: TailleVariante;
+  @ApiProperty({ example: 'M' })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(20)
+  taille!: string;
 
   @ApiProperty()
   @IsString()

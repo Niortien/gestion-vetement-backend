@@ -84,14 +84,16 @@ export class VariantesController {
         ? TypeMouvementStock.ENTREE
         : TypeMouvementStock.AJUSTEMENT;
 
-    await this.stockMovementService.createMovement({
-      varianteId: id,
-      type,
-      quantite: Math.abs(dto.variation),
-      userId: user.id,
-      motif: dto.motif ?? 'Ajustement manuel',
+    return this.prisma.$transaction(async (tx) => {
+      await this.stockMovementService.createMovement({
+        varianteId: id,
+        type,
+        quantite: Math.abs(dto.variation),
+        userId: user.id,
+        motif: dto.motif ?? 'Ajustement manuel',
+        tx,
+      });
+      return tx.variante.findUnique({ where: { id } });
     });
-
-    return this.prisma.variante.findUnique({ where: { id } });
   }
 }

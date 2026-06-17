@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Patch,
@@ -19,6 +20,7 @@ import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { CreateEntreeDto } from './dto/create-entree.dto';
 import { QueryEntreeDto } from './dto/query-entree.dto';
+import { UpdateEntreeDto } from './dto/update-entree.dto';
 import { EntreesService } from './entrees.service';
 
 @ApiTags('Entrees')
@@ -55,10 +57,24 @@ export class EntreesController {
     return this.entreesService.create(dto, user.id);
   }
 
+  @Patch(':id')
+  @ApiOperation({ summary: 'Modifier le fournisseur ou les notes d une entree' })
+  @ApiResponse({ status: 200 })
+  async update(@Param('id') id: string, @Body() dto: UpdateEntreeDto) {
+    return this.entreesService.update(id, dto);
+  }
+
   @Patch(':id/annuler')
   @ApiOperation({ summary: 'Annuler une entree avec ajustements inverses' })
   @ApiResponse({ status: 200 })
   async annuler(@Param('id') id: string, @CurrentUser() user: { id: string }) {
     return this.entreesService.annuler(id, user.id);
+  }
+
+  @Delete(':id')
+  @ApiOperation({ summary: 'Supprimer une entree et inverser les mouvements de stock' })
+  @ApiResponse({ status: 200 })
+  async delete(@Param('id') id: string, @CurrentUser() user: { id: string }) {
+    return this.entreesService.delete(id, user.id);
   }
 }

@@ -10,6 +10,7 @@ import {
 import { StockMovementService } from '../stock/stock-movement.service';
 import { CreateSortieDto } from './dto/create-sortie.dto';
 import { QuerySortieDto } from './dto/query-sortie.dto';
+import { UpdateSortieDto } from './dto/update-sortie.dto';
 
 @Injectable()
 export class SortiesService {
@@ -51,7 +52,12 @@ export class SortiesService {
   async findById(id: string) {
     const sortie = await this.prisma.sortie.findUnique({
       where: { id },
-      include: { lignes: { include: { variante: true } }, user: true },
+      include: {
+        lignes: {
+          include: { variante: { include: { produit: true } } },
+        },
+        user: true,
+      },
     });
 
     if (!sortie) {
@@ -62,7 +68,12 @@ export class SortiesService {
       );
     }
 
-    return sortie;
+    const transaction = await this.prisma.transaction.findFirst({
+      where: { sortieId: id },
+      select: { modePaiement: true, reference: true },
+    });
+
+    return { ...sortie, transaction: transaction ?? null };
   }
 
   async create(dto: CreateSortieDto, userId: string) {
@@ -119,6 +130,39 @@ export class SortiesService {
       }
 
       return sortie;
+    });
+  }
+
+  async update(id: string, dto: UpdateSortieDto) {
+    await this.findById(id);
+    return this.prisma.sortie.update({
+      where: { id },
+      data: {
+        ...(dto.notes !== undefined && { notes: dto.notes }),
+      },
+    });
+  }
+
+  async delete(id: string, userId: string) {
+    const sortie = await this.findById(id);
+    const alreadyAnnulee = sortie.notes?.includes('[ANNULEE]') ?? false;
+
+    return this.prisma.$transaction(async (tx) => {
+      if (!alreadyAnnulee) {
+        for (const line of sortie.lignes) {
+          await this.stockMovementService.createMovement({
+            varianteId: line.varianteId,
+            type: 'RETOUR',
+            quantite: line.quantite,
+            userId,
+            motif: `Suppression sortie ${sortie.reference}`,
+            referenceSortie: sortie.reference,
+            tx,
+          });
+        }
+      }
+      await tx.ligneSortie.deleteMany({ where: { sortieId: id } });
+      await tx.sortie.delete({ where: { id } });
     });
   }
 

@@ -1,5 +1,5 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { TailleVariante, TypeMouvementStock } from '@prisma/client';
+import { TypeMouvementStock } from '@prisma/client';
 import {
   IsBoolean,
   IsDateString,
@@ -8,6 +8,7 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  MaxLength,
 } from 'class-validator';
 import { PaginationDto } from '../../common/dto/pagination.dto';
 
@@ -17,10 +18,11 @@ export class QueryStockDto extends PaginationDto {
   @IsBoolean()
   alerte?: boolean;
 
-  @ApiPropertyOptional({ enum: TailleVariante })
+  @ApiPropertyOptional()
   @IsOptional()
-  @IsEnum(TailleVariante)
-  taille?: TailleVariante;
+  @IsString()
+  @MaxLength(20)
+  taille?: string;
 
   @ApiPropertyOptional()
   @IsOptional()
@@ -56,10 +58,11 @@ export class QueryMouvementDto extends PaginationDto {
 }
 
 export class UpdateVarianteDto {
-  @ApiPropertyOptional({ enum: TailleVariante })
+  @ApiPropertyOptional()
   @IsOptional()
-  @IsEnum(TailleVariante)
-  taille?: TailleVariante;
+  @IsString()
+  @MaxLength(20)
+  taille?: string;
 
   @ApiPropertyOptional()
   @IsOptional()

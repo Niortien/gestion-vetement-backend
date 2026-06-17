@@ -37,14 +37,8 @@ export class CaisseService {
   }
 
   async getActiveSession() {
-    const todayStart = new Date();
-    todayStart.setHours(0, 0, 0, 0);
-
     return this.prisma.session.findFirst({
-      where: {
-        statut: 'OUVERTE',
-        dateOuverture: { gte: todayStart },
-      },
+      where: { statut: 'OUVERTE' },
       include: { user: true },
       orderBy: { dateOuverture: 'desc' },
     });
@@ -68,7 +62,7 @@ export class CaisseService {
         userId,
         dateOuverture: new Date(),
         montantOuverture: new Prisma.Decimal(
-          new Decimal(dto.montantOuverture).toFixed(2),
+          new Decimal(dto.montantOuverture ?? '0').toFixed(2),
         ),
         statut: 'OUVERTE',
       },
@@ -173,15 +167,16 @@ export class CaisseService {
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
 
-    const [transactions, entrees, sorties] = await Promise.all([
+    const [transactions, achats, session] = await Promise.all([
       this.prisma.transaction.findMany({
         where: { createdAt: { gte: todayStart } },
       }),
       this.prisma.entree.findMany({
         where: { createdAt: { gte: todayStart } },
       }),
-      this.prisma.sortie.findMany({
-        where: { createdAt: { gte: todayStart } },
+      this.prisma.session.findFirst({
+        where: { statut: 'OUVERTE' },
+        orderBy: { dateOuverture: 'desc' },
       }),
     ]);
 
@@ -189,30 +184,35 @@ export class CaisseService {
       (sum, tx) => sum.plus(tx.montant.toString()),
       new Decimal(0),
     );
-    const totalEntrees = entrees.reduce(
-      (sum, entry) => sum.plus(entry.totalCout.toString()),
+    const totalAchats = achats.reduce(
+      (sum, e) => sum.plus(e.totalCout.toString()),
       new Decimal(0),
     );
-    const totalSorties = sorties.reduce(
-      (sum, sortie) => sum.plus(sortie.totalMontant.toString()),
-      new Decimal(0),
-    );
+    const beneficeNet = totalVentes.minus(totalAchats);
 
-    const grouped = transactions.reduce<Record<string, string>>((acc, tx) => {
-      const current = new Decimal(acc[tx.modePaiement] ?? '0');
-      acc[tx.modePaiement] = current.plus(tx.montant.toString()).toFixed(2);
-      return acc;
-    }, {});
+    const parModePaiement = transactions.reduce<Record<string, string>>(
+      (acc, tx) => {
+        const current = new Decimal(acc[tx.modePaiement] ?? '0');
+        acc[tx.modePaiement] = current.plus(tx.montant.toString()).toFixed(2);
+        return acc;
+      },
+      {},
+    );
 
     return {
+      session: session
+        ? {
+            id: session.id,
+            statut: session.statut,
+            montantOuverture: session.montantOuverture.toString(),
+            dateOuverture: session.dateOuverture.toISOString(),
+          }
+        : null,
       totalVentes: totalVentes.toFixed(2),
-      totalEntrees: totalEntrees.toFixed(2),
-      totalSorties: totalSorties.toFixed(2),
-      soldeActuel: totalVentes
-        .minus(totalSorties)
-        .minus(totalEntrees)
-        .toFixed(2),
-      parModePaiement: grouped,
+      totalTransactions: transactions.length,
+      totalAchats: totalAchats.toFixed(2),
+      beneficeNet: beneficeNet.toFixed(2),
+      parModePaiement,
     };
   }
 }

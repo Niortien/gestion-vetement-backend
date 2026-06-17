@@ -24,6 +24,7 @@ import { CreateProduitDto } from './dto/create-produit.dto';
 import { UpdateProduitDto } from './dto/update-produit.dto';
 import { CreateProduitImageDto } from './dto/create-produit-image.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+import { Public } from '../common/decorators/public.decorator';
 
 @ApiTags('Produits')
 @ApiBearerAuth()
@@ -32,6 +33,7 @@ import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 export class ProduitsController {
   constructor(private readonly produitsService: ProduitsService) {}
 
+  @Public()
   @Get()
   @ApiOperation({ summary: 'Lister les produits' })
   @ApiQuery({ name: 'page', required: false })
@@ -44,6 +46,7 @@ export class ProduitsController {
     return this.produitsService.findAll(query);
   }
 
+  @Public()
   @Get('categories')
   @ApiOperation({ summary: 'Lister toutes les categories' })
   @ApiResponse({ status: 200, description: 'Liste des categories' })
@@ -51,6 +54,7 @@ export class ProduitsController {
     return this.produitsService.findAllCategories();
   }
 
+  @Public()
   @Get(':id')
   @ApiOperation({ summary: 'Recuperer un produit' })
   @ApiResponse({ status: 200, description: 'Produit avec variantes' })
