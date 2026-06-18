@@ -7,6 +7,7 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  IsUrl,
   IsUUID,
   MaxLength,
   Min,
@@ -47,6 +48,11 @@ export class NewProduitForEntreeDto {
   @IsInt()
   @Min(0)
   seuilAlerte?: number;
+
+  @ApiPropertyOptional({ example: 'https://example.com/image.jpg' })
+  @IsOptional()
+  @IsUrl()
+  imageUrl?: string;
 }
 
 class CreateLigneEntreeDto {

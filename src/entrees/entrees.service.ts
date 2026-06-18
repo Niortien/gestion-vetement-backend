@@ -93,6 +93,7 @@ export class EntreesService {
                 prixAchat: new Prisma.Decimal(
                   new Decimal(newProduit.prixAchat).toFixed(2),
                 ),
+                ...(newProduit.imageUrl ? { imageUrl: newProduit.imageUrl } : {}),
                 variantes: {
                   create: [
                     {
