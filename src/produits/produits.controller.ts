@@ -27,6 +27,15 @@ import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { Public } from '../common/decorators/public.decorator';
 import { CurrentUser, AuthenticatedUser } from '../common/decorators/current-user.decorator';
 
+function resolveBoutiqueId(
+  user: AuthenticatedUser | undefined,
+  queryBoutiqueId?: string,
+): string | undefined {
+  if (!user) return undefined; // route publique vitrine → pas de filtre
+  if (user.role !== 'ADMIN') return user.boutiqueId ?? undefined;
+  return queryBoutiqueId ?? undefined;
+}
+
 @ApiTags('Produits')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
@@ -42,8 +51,13 @@ export class ProduitsController {
   @ApiQuery({ name: 'categorieId', required: false })
   @ApiQuery({ name: 'search', required: false })
   @ApiQuery({ name: 'isActif', required: false })
+  @ApiQuery({ name: 'boutiqueId', required: false })
   @ApiResponse({ status: 200, description: 'Page paginee des produits' })
-  async findAll(@Query() query: QueryProduitDto) {
+  async findAll(
+    @Query() query: QueryProduitDto,
+    @CurrentUser() user?: AuthenticatedUser,
+  ) {
+    query.boutiqueId = resolveBoutiqueId(user, query.boutiqueId);
     return this.produitsService.findAll(query);
   }
 

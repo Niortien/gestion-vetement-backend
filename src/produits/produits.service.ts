@@ -35,6 +35,9 @@ export class ProduitsService {
       categorieId: query.categorieId,
       isActif: query.isActif,
       enPromo: query.enPromo,
+      ...(query.boutiqueId
+        ? { variantes: { some: { boutiqueId: query.boutiqueId } } }
+        : {}),
       ...(query.search
         ? {
             OR: [

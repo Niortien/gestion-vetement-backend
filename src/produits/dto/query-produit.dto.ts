@@ -22,4 +22,9 @@ export class QueryProduitDto extends PaginationDto {
   @IsOptional()
   @IsBoolean()
   enPromo?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  boutiqueId?: string;
 }
