@@ -16,6 +16,7 @@ import {
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { AuthenticatedUser } from '../common/decorators/current-user.decorator';
 import { CaisseService } from './caisse.service';
 import { CloseCaisseDto } from './dto/close-caisse.dto';
 import { CreateTransactionDto } from './dto/create-transaction.dto';
@@ -23,6 +24,10 @@ import {
   OpenSessionDto,
   QueryTransactionDto,
 } from './dto/query-transaction.dto';
+
+function resolveBoutiqueId(user: AuthenticatedUser, queryBoutiqueId?: string): string | null {
+  return user.role === 'ADMIN' ? (queryBoutiqueId ?? null) : user.boutiqueId;
+}
 
 @ApiTags('Caisse')
 @ApiBearerAuth()
@@ -33,26 +38,39 @@ export class CaisseController {
 
   @Get('sessions')
   @ApiOperation({ summary: 'Lister les sessions de caisse' })
+  @ApiQuery({ name: 'boutiqueId', required: false })
   @ApiResponse({ status: 200 })
-  async listSessions(@Query() query: QueryTransactionDto) {
-    return this.caisseService.listSessions(query);
+  async listSessions(
+    @Query() query: QueryTransactionDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    const boutiqueId = resolveBoutiqueId(user, query.boutiqueId);
+    return this.caisseService.listSessions(query, boutiqueId);
   }
 
   @Get('sessions/active')
   @ApiOperation({ summary: 'Recuperer la session ouverte du jour' })
+  @ApiQuery({ name: 'boutiqueId', required: false })
   @ApiResponse({ status: 200 })
-  async getActiveSession() {
-    return this.caisseService.getActiveSession();
+  async getActiveSession(
+    @Query('boutiqueId') queryBoutiqueId: string | undefined,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    const boutiqueId = resolveBoutiqueId(user, queryBoutiqueId);
+    return this.caisseService.getActiveSession(boutiqueId);
   }
 
   @Post('sessions/ouvrir')
   @ApiOperation({ summary: 'Ouvrir une session de caisse' })
+  @ApiQuery({ name: 'boutiqueId', required: false })
   @ApiResponse({ status: 201 })
   async openSession(
     @Body() dto: OpenSessionDto,
-    @CurrentUser() user: { id: string },
+    @CurrentUser() user: AuthenticatedUser,
+    @Query('boutiqueId') queryBoutiqueId?: string,
   ) {
-    return this.caisseService.openSession(dto, user.id);
+    const boutiqueId = resolveBoutiqueId(user, queryBoutiqueId);
+    return this.caisseService.openSession(dto, user.id, boutiqueId);
   }
 
   @Post('sessions/:id/fermer')
@@ -78,14 +96,24 @@ export class CaisseController {
   @Post('transactions')
   @ApiOperation({ summary: 'Creer une transaction sur la session active' })
   @ApiResponse({ status: 201 })
-  async createTransaction(@Body() dto: CreateTransactionDto) {
-    return this.caisseService.createTransaction(dto);
+  async createTransaction(
+    @Body() dto: CreateTransactionDto,
+    @CurrentUser() user: AuthenticatedUser,
+    @Query('boutiqueId') queryBoutiqueId?: string,
+  ) {
+    const boutiqueId = resolveBoutiqueId(user, queryBoutiqueId);
+    return this.caisseService.createTransaction(dto, boutiqueId);
   }
 
   @Get('resume-jour')
   @ApiOperation({ summary: 'Afficher le resume du jour' })
+  @ApiQuery({ name: 'boutiqueId', required: false })
   @ApiResponse({ status: 200 })
-  async resumeJour() {
-    return this.caisseService.resumeJour();
+  async resumeJour(
+    @Query('boutiqueId') queryBoutiqueId: string | undefined,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    const boutiqueId = resolveBoutiqueId(user, queryBoutiqueId);
+    return this.caisseService.resumeJour(boutiqueId);
   }
 }

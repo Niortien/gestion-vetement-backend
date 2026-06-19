@@ -20,8 +20,9 @@ export class EntreesService {
     return `ENT-${Math.floor(Date.now() / 1000)}`;
   }
 
-  async findAll(query: QueryEntreeDto): Promise<PageDto<unknown>> {
+  async findAll(query: QueryEntreeDto, boutiqueId: string | null): Promise<PageDto<unknown>> {
     const where: Prisma.EntreeWhereInput = {
+      ...(boutiqueId ? { boutiqueId } : {}),
       fournisseur: query.fournisseur
         ? { contains: query.fournisseur, mode: 'insensitive' }
         : undefined,
@@ -65,7 +66,7 @@ export class EntreesService {
     return entree;
   }
 
-  async create(dto: CreateEntreeDto, userId: string) {
+  async create(dto: CreateEntreeDto, userId: string, boutiqueId: string | null) {
     return this.prisma.$transaction(async (tx) => {
       // Resolve varianteId for each line — create product inline if newProduit is provided
       const resolvedLines = await Promise.all(
@@ -101,6 +102,7 @@ export class EntreesService {
                       couleur: newProduit.couleur,
                       quantiteStock: 0,
                       seuilAlerte: newProduit.seuilAlerte ?? 0,
+                      ...(boutiqueId ? { boutiqueId } : {}),
                     },
                   ],
                 },
@@ -128,6 +130,7 @@ export class EntreesService {
           totalCout: new Prisma.Decimal(total.toFixed(2)),
           notes: dto.notes,
           userId,
+          ...(boutiqueId ? { boutiqueId } : {}),
           lignes: {
             create: resolvedLines.map((line) => ({
               varianteId: line.resolvedVarianteId,

@@ -19,7 +19,7 @@ describe('StockMovementService', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    service = new StockMovementService(prisma as never, queue as never);
+    service = new StockMovementService(prisma as never);
   });
 
   it('creates movement and updates stock', async () => {

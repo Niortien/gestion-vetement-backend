@@ -32,14 +32,22 @@ export class RapportsService {
 
   async ventes(query: QueryRapportDto) {
     const range = this.toDateRange(query);
+    const boutiqueId = query.boutiqueId ?? null;
 
     const [sorties, transactions] = await Promise.all([
       this.prisma.sortie.findMany({
-        where: { type: 'VENTE', createdAt: range },
+        where: {
+          type: 'VENTE',
+          createdAt: range,
+          ...(boutiqueId ? { boutiqueId } : {}),
+        },
         orderBy: { createdAt: 'asc' },
       }),
       this.prisma.transaction.findMany({
-        where: { createdAt: range },
+        where: {
+          createdAt: range,
+          ...(boutiqueId ? { session: { boutiqueId } } : {}),
+        },
         orderBy: { createdAt: 'asc' },
       }),
     ]);
@@ -82,8 +90,9 @@ export class RapportsService {
       }));
   }
 
-  async stockValeur() {
+  async stockValeur(boutiqueId?: string | null) {
     const variantes = await this.prisma.variante.findMany({
+      where: boutiqueId ? { boutiqueId } : undefined,
       include: { produit: true },
     });
 
@@ -114,11 +123,13 @@ export class RapportsService {
   }
 
   async topProduits(query: QueryRapportDto) {
+    const boutiqueId = query.boutiqueId ?? null;
     const lignes = await this.prisma.ligneSortie.findMany({
       where: {
         sortie: {
           createdAt: this.toDateRange(query),
           type: 'VENTE',
+          ...(boutiqueId ? { boutiqueId } : {}),
         },
       },
       include: {
@@ -160,16 +171,23 @@ export class RapportsService {
 
   async fluxTresorerie(query: QueryRapportDto) {
     const range = this.toDateRange(query);
+    const boutiqueId = query.boutiqueId ?? null;
 
     // entrees de trésorerie = argent reçu (transactions de vente)
     const transactions = await this.prisma.transaction.findMany({
-      where: { createdAt: range },
+      where: {
+        createdAt: range,
+        ...(boutiqueId ? { session: { boutiqueId } } : {}),
+      },
       orderBy: { createdAt: 'asc' },
     });
 
     // sorties de trésorerie = achats fournisseurs (entrées de stock)
     const achats = await this.prisma.entree.findMany({
-      where: { createdAt: range },
+      where: {
+        createdAt: range,
+        ...(boutiqueId ? { boutiqueId } : {}),
+      },
       orderBy: { createdAt: 'asc' },
     });
 

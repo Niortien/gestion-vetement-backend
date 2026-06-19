@@ -43,6 +43,7 @@ describe('CaisseService', () => {
     const result = await service.openSession(
       { montantOuverture: '1000.00' },
       'u1',
+      null,
     );
     expect(result).toEqual({ id: 's1', statut: 'OUVERTE' });
   });
@@ -50,7 +51,7 @@ describe('CaisseService', () => {
   it('throws when no active session on transaction creation', async () => {
     prisma.session.findFirst.mockResolvedValue(null);
     await expect(
-      service.createTransaction({ montant: '5000.00', modePaiement: 'CASH' }),
+      service.createTransaction({ montant: '5000.00', modePaiement: 'CASH' }, null),
     ).rejects.toThrow();
   });
 });

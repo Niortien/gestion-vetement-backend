@@ -17,4 +17,9 @@ export class QueryEntreeDto extends PaginationDto {
   @IsOptional()
   @IsString()
   fournisseur?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  boutiqueId?: string;
 }

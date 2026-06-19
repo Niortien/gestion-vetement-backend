@@ -9,7 +9,9 @@ import { CreateProduitDto } from './dto/create-produit.dto';
 import { UpdateProduitDto } from './dto/update-produit.dto';
 
 const PRODUIT_INCLUDE = {
-  variantes: true,
+  variantes: {
+    include: { boutique: { select: { id: true, nom: true, ville: true, whatsapp: true } } },
+  },
   categorie: true,
   images: { orderBy: { ordre: 'asc' as const } },
 } as const;
@@ -78,7 +80,7 @@ export class ProduitsService {
     return produit;
   }
 
-  async create(dto: CreateProduitDto): Promise<Produit> {
+  async create(dto: CreateProduitDto, boutiqueId: string | null): Promise<Produit> {
     const categorie = await this.prisma.categorie.findUnique({
       where: { id: dto.categorieId },
     });
@@ -106,6 +108,7 @@ export class ProduitsService {
                 couleur: v.couleur,
                 quantiteStock: v.quantiteStock,
                 seuilAlerte: v.seuilAlerte,
+                ...(boutiqueId ? { boutiqueId } : {}),
               })),
             }
           : undefined,

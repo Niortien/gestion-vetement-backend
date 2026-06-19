@@ -7,13 +7,30 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model Boutique {
+  id        String     @id @default(uuid())
+  nom       String
+  adresse   String?
+  ville     String?
+  whatsapp  String?
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  users     User[]
+  sessions  Session[]
+  entrees   Entree[]
+  sorties   Sortie[]
+  variantes Variante[]
+}
+
 model User {
   id           String           @id @default(uuid())
   email        String           @unique
   passwordHash String
   role         UserRole         @default(VENDEUR)
+  boutiqueId   String?
   createdAt    DateTime         @default(now())
   updatedAt    DateTime         @updatedAt
+  boutique     Boutique?        @relation(fields: [boutiqueId], references: [id])
   entrees      Entree[]
   mouvements   MouvementStock[]
   sessions     Session[]
@@ -61,6 +78,7 @@ model ProduitImage {
 model Variante {
   id            String           @id @default(uuid())
   produitId     String
+  boutiqueId    String?
   taille        String
   couleur       String
   quantiteStock Int
@@ -70,9 +88,10 @@ model Variante {
   lignesEntree  LigneEntree[]
   lignesSortie  LigneSortie[]
   mouvements    MouvementStock[]
+  boutique      Boutique?        @relation(fields: [boutiqueId], references: [id])
   produit       Produit          @relation(fields: [produitId], references: [id])
 
-  @@unique([produitId, taille, couleur])
+  @@unique([produitId, taille, couleur, boutiqueId])
 }
 
 model MouvementStock {
@@ -96,7 +115,9 @@ model Entree {
   totalCout   Decimal       @db.Decimal(10, 2)
   notes       String?
   userId      String
+  boutiqueId  String?
   createdAt   DateTime      @default(now())
+  boutique    Boutique?     @relation(fields: [boutiqueId], references: [id])
   user        User          @relation(fields: [userId], references: [id])
   lignes      LigneEntree[]
 }
@@ -120,9 +141,11 @@ model Sortie {
   totalMontant     Decimal       @db.Decimal(10, 2)
   notes            String?
   userId           String
+  boutiqueId       String?
   transactionId    String?
   createdAt        DateTime      @default(now())
   lignes           LigneSortie[]
+  boutique         Boutique?     @relation(fields: [boutiqueId], references: [id])
   user             User          @relation(fields: [userId], references: [id])
 }
 
@@ -139,11 +162,13 @@ model LigneSortie {
 model Session {
   id               String              @id @default(uuid())
   userId           String
+  boutiqueId       String?
   dateOuverture    DateTime
   dateFermeture    DateTime?
   montantOuverture Decimal             @db.Decimal(10, 2)
   montantFermeture Decimal?            @db.Decimal(10, 2)
   statut           StatutSessionCaisse
+  boutique         Boutique?           @relation(fields: [boutiqueId], references: [id])
   user             User                @relation(fields: [userId], references: [id])
   transactions     Transaction[]
 }

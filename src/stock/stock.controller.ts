@@ -7,8 +7,13 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+import { CurrentUser, AuthenticatedUser } from '../common/decorators/current-user.decorator';
 import { QueryMouvementDto, QueryStockDto } from './dto/query-stock.dto';
 import { StockService } from './stock.service';
+
+function resolveBoutiqueId(user: AuthenticatedUser, queryBoutiqueId?: string): string | null {
+  return user.role === 'ADMIN' ? (queryBoutiqueId ?? null) : user.boutiqueId;
+}
 
 @ApiTags('Stock')
 @ApiBearerAuth()
@@ -23,16 +28,26 @@ export class StockController {
   @ApiQuery({ name: 'taille', required: false })
   @ApiQuery({ name: 'couleur', required: false })
   @ApiQuery({ name: 'categorieId', required: false })
+  @ApiQuery({ name: 'boutiqueId', required: false })
   @ApiResponse({ status: 200, description: 'Liste paginee du stock' })
-  async listStock(@Query() query: QueryStockDto) {
-    return this.stockService.listStock(query);
+  async listStock(
+    @Query() query: QueryStockDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    const boutiqueId = resolveBoutiqueId(user, query.boutiqueId);
+    return this.stockService.listStock(query, boutiqueId);
   }
 
   @Get('alertes')
   @ApiOperation({ summary: 'Lister les alertes de stock' })
+  @ApiQuery({ name: 'boutiqueId', required: false })
   @ApiResponse({ status: 200, description: 'Variantes sous seuil' })
-  async listAlertes() {
-    return this.stockService.listAlertes();
+  async listAlertes(
+    @Query('boutiqueId') queryBoutiqueId: string | undefined,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    const boutiqueId = resolveBoutiqueId(user, queryBoutiqueId);
+    return this.stockService.listAlertes(boutiqueId);
   }
 
   @Get('mouvements')
@@ -41,8 +56,13 @@ export class StockController {
   @ApiQuery({ name: 'dateDebut', required: false })
   @ApiQuery({ name: 'dateFin', required: false })
   @ApiQuery({ name: 'produitId', required: false })
+  @ApiQuery({ name: 'boutiqueId', required: false })
   @ApiResponse({ status: 200, description: 'Mouvements pagines' })
-  async listMouvements(@Query() query: QueryMouvementDto) {
-    return this.stockService.listMouvements(query);
+  async listMouvements(
+    @Query() query: QueryMouvementDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    const boutiqueId = resolveBoutiqueId(user, query.boutiqueId);
+    return this.stockService.listMouvements(query, boutiqueId);
   }
 }

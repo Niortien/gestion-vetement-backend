@@ -15,6 +15,7 @@ import { EntreesModule } from './entrees/entrees.module';
 import { SortiesModule } from './sorties/sorties.module';
 import { CaisseModule } from './caisse/caisse.module';
 import { RapportsModule } from './rapports/rapports.module';
+import { BoutiquesModule } from './boutiques/boutiques.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
@@ -40,6 +41,7 @@ import { TransformInterceptor } from './common/interceptors/transform.intercepto
     SortiesModule,
     CaisseModule,
     RapportsModule,
+    BoutiquesModule,
   ],
   providers: [
     { provide: APP_FILTER, useClass: HttpExceptionFilter },

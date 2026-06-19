@@ -8,8 +8,9 @@ import { QueryMouvementDto, QueryStockDto } from './dto/query-stock.dto';
 export class StockService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async listStock(query: QueryStockDto): Promise<PageDto<unknown>> {
+  async listStock(query: QueryStockDto, boutiqueId: string | null): Promise<PageDto<unknown>> {
     const where: Prisma.VarianteWhereInput = {
+      ...(boutiqueId ? { boutiqueId } : {}),
       produit: {
         isActif: true,
         ...(query.categorieId ? { categorieId: query.categorieId } : {}),
@@ -36,9 +37,10 @@ export class StockService {
     return new PageDto(data, total, query.page, query.limit);
   }
 
-  async listAlertes(): Promise<unknown[]> {
+  async listAlertes(boutiqueId: string | null): Promise<unknown[]> {
     return this.prisma.variante.findMany({
       where: {
+        ...(boutiqueId ? { boutiqueId } : {}),
         quantiteStock: { lte: this.prisma.variante.fields.seuilAlerte },
         produit: { isActif: true },
       },
@@ -47,7 +49,7 @@ export class StockService {
     });
   }
 
-  async listMouvements(query: QueryMouvementDto): Promise<PageDto<unknown>> {
+  async listMouvements(query: QueryMouvementDto, boutiqueId: string | null): Promise<PageDto<unknown>> {
     const where: Prisma.MouvementStockWhereInput = {
       type: query.type,
       createdAt:
@@ -57,7 +59,10 @@ export class StockService {
               lte: query.dateFin ? new Date(query.dateFin) : undefined,
             }
           : undefined,
-      variante: query.produitId ? { produitId: query.produitId } : undefined,
+      variante: {
+        ...(boutiqueId ? { boutiqueId } : {}),
+        ...(query.produitId ? { produitId: query.produitId } : {}),
+      },
     };
 
     const [total, data] = await this.prisma.$transaction([

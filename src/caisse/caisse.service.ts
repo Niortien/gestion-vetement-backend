@@ -22,8 +22,10 @@ export class CaisseService {
     private readonly gateway: CaisseGateway,
   ) {}
 
-  async listSessions(query: QueryTransactionDto): Promise<PageDto<unknown>> {
-    const where: Prisma.SessionWhereInput = {};
+  async listSessions(query: QueryTransactionDto, boutiqueId: string | null): Promise<PageDto<unknown>> {
+    const where: Prisma.SessionWhereInput = {
+      ...(boutiqueId ? { boutiqueId } : {}),
+    };
 
     if (query.dateDebut || query.dateFin) {
       where.dateOuverture = {
@@ -36,7 +38,7 @@ export class CaisseService {
       this.prisma.session.count({ where }),
       this.prisma.session.findMany({
         where,
-        include: { user: true },
+        include: { user: true, boutique: true },
         skip: (query.page - 1) * query.limit,
         take: query.limit,
         orderBy: { dateOuverture: 'desc' },
@@ -46,17 +48,17 @@ export class CaisseService {
     return new PageDto(data, total, query.page, query.limit);
   }
 
-  async getActiveSession() {
+  async getActiveSession(boutiqueId: string | null) {
     return this.prisma.session.findFirst({
-      where: { statut: 'OUVERTE' },
-      include: { user: true },
+      where: { statut: 'OUVERTE', ...(boutiqueId ? { boutiqueId } : {}) },
+      include: { user: true, boutique: true },
       orderBy: { dateOuverture: 'desc' },
     });
   }
 
-  async openSession(dto: OpenSessionDto, userId: string) {
+  async openSession(dto: OpenSessionDto, userId: string, boutiqueId: string | null) {
     const active = await this.prisma.session.findFirst({
-      where: { statut: 'OUVERTE' },
+      where: { statut: 'OUVERTE', ...(boutiqueId ? { boutiqueId } : {}) },
     });
 
     if (active) {
@@ -70,13 +72,14 @@ export class CaisseService {
     return this.prisma.session.create({
       data: {
         userId,
+        ...(boutiqueId ? { boutiqueId } : {}),
         dateOuverture: new Date(),
         montantOuverture: new Prisma.Decimal(
           new Decimal(dto.montantOuverture ?? '0').toFixed(2),
         ),
         statut: 'OUVERTE',
       },
-      include: { user: true },
+      include: { user: true, boutique: true },
     });
   }
 
@@ -145,9 +148,9 @@ export class CaisseService {
     return new PageDto(data, total, query.page, query.limit);
   }
 
-  async createTransaction(dto: CreateTransactionDto) {
+  async createTransaction(dto: CreateTransactionDto, boutiqueId: string | null) {
     const active = await this.prisma.session.findFirst({
-      where: { statut: 'OUVERTE' },
+      where: { statut: 'OUVERTE', ...(boutiqueId ? { boutiqueId } : {}) },
       orderBy: { dateOuverture: 'desc' },
     });
 
@@ -173,19 +176,23 @@ export class CaisseService {
     return transaction;
   }
 
-  async resumeJour() {
+  async resumeJour(boutiqueId: string | null) {
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
+    const boutiqueFilter = boutiqueId ? { boutiqueId } : {};
 
     const [transactions, achats, session] = await Promise.all([
       this.prisma.transaction.findMany({
-        where: { createdAt: { gte: todayStart } },
+        where: {
+          createdAt: { gte: todayStart },
+          ...(boutiqueId ? { session: { boutiqueId } } : {}),
+        },
       }),
       this.prisma.entree.findMany({
-        where: { createdAt: { gte: todayStart } },
+        where: { createdAt: { gte: todayStart }, ...boutiqueFilter },
       }),
       this.prisma.session.findFirst({
-        where: { statut: 'OUVERTE' },
+        where: { statut: 'OUVERTE', ...boutiqueFilter },
         orderBy: { dateOuverture: 'desc' },
       }),
     ]);

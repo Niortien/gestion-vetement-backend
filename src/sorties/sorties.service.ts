@@ -23,8 +23,9 @@ export class SortiesService {
     return `SOR-${Math.floor(Date.now() / 1000)}`;
   }
 
-  async findAll(query: QuerySortieDto): Promise<PageDto<unknown>> {
+  async findAll(query: QuerySortieDto, boutiqueId: string | null): Promise<PageDto<unknown>> {
     const where: Prisma.SortieWhereInput = {
+      ...(boutiqueId ? { boutiqueId } : {}),
       type: query.type,
       createdAt:
         query.dateDebut || query.dateFin
@@ -76,7 +77,7 @@ export class SortiesService {
     return { ...sortie, transaction: transaction ?? null };
   }
 
-  async create(dto: CreateSortieDto, userId: string) {
+  async create(dto: CreateSortieDto, userId: string, boutiqueId: string | null) {
     if (dto.type === 'VENTE') {
       const activeSession = await this.prisma.session.findFirst({
         where: { statut: 'OUVERTE' },
@@ -125,6 +126,7 @@ export class SortiesService {
             : {}),
           notes: dto.notes,
           userId,
+          ...(boutiqueId ? { boutiqueId } : {}),
           lignes: {
             create: dto.lignes.map((line) => ({
               varianteId: line.varianteId,

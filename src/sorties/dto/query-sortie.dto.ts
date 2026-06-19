@@ -1,6 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { TypeSortie } from '@prisma/client';
-import { IsDateString, IsEnum, IsOptional } from 'class-validator';
+import { IsDateString, IsEnum, IsOptional, IsString } from 'class-validator';
 import { PaginationDto } from '../../common/dto/pagination.dto';
 
 export class QuerySortieDto extends PaginationDto {
@@ -18,4 +18,9 @@ export class QuerySortieDto extends PaginationDto {
   @IsOptional()
   @IsDateString()
   dateFin?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  boutiqueId?: string;
 }

@@ -31,7 +31,7 @@ export class AuthService {
   ): Promise<{
     accessToken: string;
     refreshToken: string;
-    user: { id: string; email: string; role: 'ADMIN' | 'VENDEUR' };
+    user: { id: string; email: string; role: 'ADMIN' | 'VENDEUR'; boutiqueId: string | null };
   }> {
     const user = await this.validateUser(email, password);
 
@@ -46,6 +46,7 @@ export class AuthService {
       sub: user.id,
       email: user.email,
       role: user.role,
+      boutiqueId: user.boutiqueId ?? null,
     };
 
     return {
@@ -65,6 +66,7 @@ export class AuthService {
         id: user.id,
         email: user.email,
         role: user.role,
+        boutiqueId: user.boutiqueId ?? null,
       },
     };
   }
@@ -75,6 +77,7 @@ export class AuthService {
         sub: string;
         email: string;
         role: 'ADMIN' | 'VENDEUR';
+        boutiqueId: string | null;
       }>(refreshToken, {
         secret: this.configService.getOrThrow<string>('jwtRefreshSecret', {
           infer: true,
@@ -86,6 +89,7 @@ export class AuthService {
           sub: payload.sub,
           email: payload.email,
           role: payload.role,
+          boutiqueId: payload.boutiqueId ?? null,
         },
         {
           secret: this.configService.getOrThrow<string>('jwtSecret', {

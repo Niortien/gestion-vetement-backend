@@ -25,6 +25,7 @@ import { UpdateProduitDto } from './dto/update-produit.dto';
 import { CreateProduitImageDto } from './dto/create-produit-image.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { Public } from '../common/decorators/public.decorator';
+import { CurrentUser, AuthenticatedUser } from '../common/decorators/current-user.decorator';
 
 @ApiTags('Produits')
 @ApiBearerAuth()
@@ -64,9 +65,15 @@ export class ProduitsController {
 
   @Post()
   @ApiOperation({ summary: 'Creer un produit' })
+  @ApiQuery({ name: 'boutiqueId', required: false })
   @ApiResponse({ status: 201, description: 'Produit cree' })
-  async create(@Body() dto: CreateProduitDto) {
-    return this.produitsService.create(dto);
+  async create(
+    @Body() dto: CreateProduitDto,
+    @CurrentUser() user: AuthenticatedUser,
+    @Query('boutiqueId') queryBoutiqueId?: string,
+  ) {
+    const boutiqueId = user.role === 'ADMIN' ? (queryBoutiqueId ?? null) : user.boutiqueId;
+    return this.produitsService.create(dto, boutiqueId);
   }
 
   @Patch(':id')

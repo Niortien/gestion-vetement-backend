@@ -17,11 +17,15 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
-import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { CurrentUser, AuthenticatedUser } from '../common/decorators/current-user.decorator';
 import { CreateSortieDto } from './dto/create-sortie.dto';
 import { QuerySortieDto } from './dto/query-sortie.dto';
 import { UpdateSortieDto } from './dto/update-sortie.dto';
 import { SortiesService } from './sorties.service';
+
+function resolveBoutiqueId(user: AuthenticatedUser, queryBoutiqueId?: string): string | null {
+  return user.role === 'ADMIN' ? (queryBoutiqueId ?? null) : user.boutiqueId;
+}
 
 @ApiTags('Sorties')
 @ApiBearerAuth()
@@ -35,9 +39,14 @@ export class SortiesController {
   @ApiQuery({ name: 'type', required: false })
   @ApiQuery({ name: 'dateDebut', required: false })
   @ApiQuery({ name: 'dateFin', required: false })
+  @ApiQuery({ name: 'boutiqueId', required: false })
   @ApiResponse({ status: 200 })
-  async findAll(@Query() query: QuerySortieDto) {
-    return this.sortiesService.findAll(query);
+  async findAll(
+    @Query() query: QuerySortieDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    const boutiqueId = resolveBoutiqueId(user, query.boutiqueId);
+    return this.sortiesService.findAll(query, boutiqueId);
   }
 
   @Get(':id')
@@ -49,12 +58,15 @@ export class SortiesController {
 
   @Post()
   @ApiOperation({ summary: 'Creer une sortie + mouvements SORTIE atomiques' })
+  @ApiQuery({ name: 'boutiqueId', required: false })
   @ApiResponse({ status: 201 })
   async create(
     @Body() dto: CreateSortieDto,
-    @CurrentUser() user: { id: string },
+    @CurrentUser() user: AuthenticatedUser,
+    @Query('boutiqueId') queryBoutiqueId?: string,
   ) {
-    return this.sortiesService.create(dto, user.id);
+    const boutiqueId = resolveBoutiqueId(user, queryBoutiqueId);
+    return this.sortiesService.create(dto, user.id, boutiqueId);
   }
 
   @Patch(':id')
@@ -67,14 +79,14 @@ export class SortiesController {
   @Patch(':id/annuler')
   @ApiOperation({ summary: 'Annuler une sortie' })
   @ApiResponse({ status: 200 })
-  async annuler(@Param('id') id: string, @CurrentUser() user: { id: string }) {
+  async annuler(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
     return this.sortiesService.annuler(id, user.id);
   }
 
   @Delete(':id')
   @ApiOperation({ summary: 'Supprimer une sortie et inverser les mouvements de stock' })
   @ApiResponse({ status: 200 })
-  async delete(@Param('id') id: string, @CurrentUser() user: { id: string }) {
+  async delete(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
     return this.sortiesService.delete(id, user.id);
   }
 }

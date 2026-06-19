@@ -33,6 +33,11 @@ export class QueryStockDto extends PaginationDto {
   @IsOptional()
   @IsString()
   categorieId?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  boutiqueId?: string;
 }
 
 export class QueryMouvementDto extends PaginationDto {
@@ -55,6 +60,11 @@ export class QueryMouvementDto extends PaginationDto {
   @IsOptional()
   @IsString()
   produitId?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  boutiqueId?: string;
 }
 
 export class UpdateVarianteDto {
