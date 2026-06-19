@@ -23,9 +23,19 @@ export class CaisseService {
   ) {}
 
   async listSessions(query: QueryTransactionDto): Promise<PageDto<unknown>> {
+    const where: Prisma.SessionWhereInput = {};
+
+    if (query.dateDebut || query.dateFin) {
+      where.dateOuverture = {
+        ...(query.dateDebut ? { gte: new Date(query.dateDebut) } : {}),
+        ...(query.dateFin ? { lte: new Date(query.dateFin) } : {}),
+      };
+    }
+
     const [total, data] = await this.prisma.$transaction([
-      this.prisma.session.count(),
+      this.prisma.session.count({ where }),
       this.prisma.session.findMany({
+        where,
         include: { user: true },
         skip: (query.page - 1) * query.limit,
         take: query.limit,
