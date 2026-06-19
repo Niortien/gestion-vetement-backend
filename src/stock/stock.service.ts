@@ -10,9 +10,10 @@ export class StockService {
 
   async listStock(query: QueryStockDto): Promise<PageDto<unknown>> {
     const where: Prisma.VarianteWhereInput = {
-      produit: query.categorieId
-        ? { categorieId: query.categorieId }
-        : undefined,
+      produit: {
+        isActif: true,
+        ...(query.categorieId ? { categorieId: query.categorieId } : {}),
+      },
       taille: query.taille,
       couleur: query.couleur
         ? { contains: query.couleur, mode: 'insensitive' }
@@ -39,6 +40,7 @@ export class StockService {
     return this.prisma.variante.findMany({
       where: {
         quantiteStock: { lte: this.prisma.variante.fields.seuilAlerte },
+        produit: { isActif: true },
       },
       include: { produit: true },
       orderBy: { updatedAt: 'desc' },

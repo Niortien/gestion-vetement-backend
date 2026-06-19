@@ -91,17 +91,38 @@ export class SortiesService {
     }
 
     return this.prisma.$transaction(async (tx) => {
-      const total = dto.lignes.reduce(
+      const totalAvantRemise = dto.lignes.reduce(
         (sum, line) =>
           sum.plus(new Decimal(line.prixUnitaire).times(line.quantite)),
         new Decimal(0),
       );
+
+      const remise = dto.remiseMontant
+        ? new Decimal(dto.remiseMontant)
+        : new Decimal(0);
+
+      if (remise.gt(totalAvantRemise)) {
+        throw new ConflictDomainException(
+          'La remise ne peut pas dépasser le montant total',
+          'REMISE_EXCEEDS_TOTAL',
+        );
+      }
+
+      const total = totalAvantRemise.minus(remise);
 
       const sortie = await tx.sortie.create({
         data: {
           reference: this.buildReference(),
           type: dto.type,
           totalMontant: new Prisma.Decimal(total.toFixed(2)),
+          ...(remise.gt(0)
+            ? {
+                remiseMontant: new Prisma.Decimal(remise.toFixed(2)),
+                totalAvantRemise: new Prisma.Decimal(
+                  totalAvantRemise.toFixed(2),
+                ),
+              }
+            : {}),
           notes: dto.notes,
           userId,
           lignes: {

@@ -108,16 +108,18 @@ model LigneEntree {
 }
 
 model Sortie {
-  id            String        @id @default(uuid())
-  reference     String        @unique
-  type          TypeSortie
-  totalMontant  Decimal       @db.Decimal(10, 2)
-  notes         String?
-  userId        String
-  transactionId String?
-  createdAt     DateTime      @default(now())
-  lignes        LigneSortie[]
-  user          User          @relation(fields: [userId], references: [id])
+  id               String        @id @default(uuid())
+  reference        String        @unique
+  type             TypeSortie
+  totalAvantRemise Decimal?      @db.Decimal(10, 2)
+  remiseMontant    Decimal?      @db.Decimal(10, 2)
+  totalMontant     Decimal       @db.Decimal(10, 2)
+  notes            String?
+  userId           String
+  transactionId    String?
+  createdAt        DateTime      @default(now())
+  lignes           LigneSortie[]
+  user             User          @relation(fields: [userId], references: [id])
 }
 
 model LigneSortie {

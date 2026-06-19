@@ -37,6 +37,11 @@ export class CreateSortieDto {
   @IsString()
   notes?: string;
 
+  @ApiPropertyOptional({ example: '2000.00', description: 'Remise en montant absolu (FCFA)' })
+  @IsOptional()
+  @IsDecimal({ decimal_digits: '1,2' })
+  remiseMontant?: string;
+
   @ApiProperty({ type: [CreateLigneSortieDto] })
   @IsArray()
   @ValidateNested({ each: true })
