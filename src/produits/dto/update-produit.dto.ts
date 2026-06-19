@@ -5,6 +5,7 @@ import {
   IsDecimal,
   IsOptional,
   IsString,
+  ValidateIf,
 } from 'class-validator';
 
 export class UpdateProduitDto {
@@ -28,10 +29,11 @@ export class UpdateProduitDto {
   @IsDecimal({ decimal_digits: '1,2' })
   prixAchat?: string;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ nullable: true })
   @IsOptional()
+  @ValidateIf((o) => o.imageUrl !== null)
   @IsString()
-  imageUrl?: string;
+  imageUrl?: string | null;
 
   @ApiPropertyOptional()
   @IsOptional()
