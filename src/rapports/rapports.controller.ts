@@ -23,6 +23,22 @@ function resolveBoutiqueId(user: AuthenticatedUser, queryBoutiqueId?: string): s
 export class RapportsController {
   constructor(private readonly rapportsService: RapportsService) {}
 
+  @Get('resume-dashboard')
+  @ApiOperation({ summary: 'Données consolidées pour le dashboard (sparkline + top 5 + diagnostic)' })
+  @ApiQuery({ name: 'dateDebut', required: false })
+  @ApiQuery({ name: 'dateFin', required: false })
+  @ApiQuery({ name: 'boutiqueId', required: false })
+  @ApiResponse({ status: 200 })
+  async resumeDashboard(
+    @Query('dateDebut') dateDebut: string | undefined,
+    @Query('dateFin') dateFin: string | undefined,
+    @Query('boutiqueId') queryBoutiqueId: string | undefined,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    const boutiqueId = resolveBoutiqueId(user, queryBoutiqueId);
+    return this.rapportsService.resumeDashboard(boutiqueId, dateDebut, dateFin);
+  }
+
   @Get('ventes')
   @ApiOperation({ summary: 'Rapport des ventes' })
   @ApiQuery({ name: 'dateDebut', required: false })

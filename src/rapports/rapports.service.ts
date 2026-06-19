@@ -217,6 +217,97 @@ export class RapportsService {
       }));
   }
 
+  async resumeDashboard(boutiqueId: string | null, dateDebut?: string, dateFin?: string) {
+    const now = new Date();
+    const debut = dateDebut ? new Date(dateDebut) : new Date(now.getTime() - 7 * 86_400_000);
+    const fin = dateFin ? new Date(dateFin) : now;
+    const range = { gte: debut, lte: fin };
+    const boutiqueFilter = boutiqueId ? { boutiqueId } : {};
+
+    const [sorties, lignes, counts] = await Promise.all([
+      // données sparkline : toutes les sorties VENTE dans la période
+      this.prisma.sortie.findMany({
+        where: { type: 'VENTE', createdAt: range, ...boutiqueFilter },
+        orderBy: { createdAt: 'asc' },
+      }),
+      // données top produits : lignes de vente dans la période
+      this.prisma.ligneSortie.findMany({
+        where: { sortie: { type: 'VENTE', createdAt: range, ...boutiqueFilter } },
+        include: { variante: { include: { produit: true } } },
+      }),
+      // diagnostic : compteurs pour guider l'utilisateur
+      Promise.all([
+        this.prisma.produit.count({ where: { isActif: true } }),
+        this.prisma.variante.count({ where: boutiqueId ? { boutiqueId } : {} }),
+        this.prisma.entree.count({ where: boutiqueId ? { boutiqueId } : {} }),
+        this.prisma.sortie.count({ where: { type: 'VENTE', ...boutiqueFilter } }),
+        this.prisma.sortie.count({ where: { type: 'VENTE', createdAt: range, ...boutiqueFilter } }),
+        this.prisma.session.count({ where: { statut: 'OUVERTE', ...boutiqueFilter } }),
+      ]),
+    ]);
+
+    // sparkline groupé par jour
+    const ventesGrouped: Record<string, { totalVentes: Decimal; nombreSorties: number }> = {};
+    for (const s of sorties) {
+      const key = s.createdAt.toISOString().slice(0, 10);
+      const cur = ventesGrouped[key] ?? { totalVentes: new Decimal(0), nombreSorties: 0 };
+      cur.totalVentes = cur.totalVentes.plus(s.totalMontant.toString());
+      cur.nombreSorties += 1;
+      ventesGrouped[key] = cur;
+    }
+    const ventes = Object.entries(ventesGrouped)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([periode, v]) => ({
+        periode,
+        totalVentes: v.totalVentes.toFixed(2),
+        nombreSorties: v.nombreSorties,
+      }));
+
+    // top produits
+    const produitGrouped: Record<string, { nom: string; sku: string; quantiteTotale: number; montantTotal: Decimal }> = {};
+    for (const line of lignes) {
+      const key = line.variante.produitId;
+      const cur = produitGrouped[key] ?? {
+        nom: line.variante.produit.nom,
+        sku: line.variante.produit.sku,
+        quantiteTotale: 0,
+        montantTotal: new Decimal(0),
+      };
+      cur.quantiteTotale += line.quantite;
+      cur.montantTotal = cur.montantTotal.plus(
+        new Decimal(line.prixUnitaire.toString()).times(line.quantite),
+      );
+      produitGrouped[key] = cur;
+    }
+    const topProduits = Object.entries(produitGrouped)
+      .map(([produitId, v]) => ({
+        produitId,
+        nom: v.nom,
+        sku: v.sku,
+        quantiteTotale: v.quantiteTotale,
+        montantTotal: v.montantTotal.toFixed(2),
+      }))
+      .sort((a, b) => b.quantiteTotale - a.quantiteTotale)
+      .slice(0, 5);
+
+    const [totalProduits, totalVariantes, totalEntrees, totalVentesAllTime, totalVentes7j, sessionsOuvertes] = counts;
+
+    return {
+      periode: { debut: debut.toISOString(), fin: fin.toISOString() },
+      ventes,
+      topProduits,
+      diagnostic: {
+        totalProduits,
+        totalVariantes,
+        totalEntrees,
+        totalVentesAllTime,
+        totalVentes7j,
+        sessionsOuvertes,
+        hasData: ventes.length > 0 || topProduits.length > 0,
+      },
+    };
+  }
+
   async exportExcel(query: QueryRapportDto): Promise<Buffer> {
     const workbook = new ExcelJS.Workbook();
     const sheet = workbook.addWorksheet('Ventes');
