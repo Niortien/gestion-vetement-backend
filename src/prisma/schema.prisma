@@ -37,9 +37,13 @@ model Produit {
   prixVente   Decimal        @db.Decimal(10, 2)
   prixAchat   Decimal        @db.Decimal(10, 2)
   imageUrl    String?
-  isActif     Boolean        @default(true)
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
+  isActif        Boolean        @default(true)
+  enPromo        Boolean        @default(false)
+  prixPromo      Decimal?       @db.Decimal(10, 2)
+  dateDebutPromo DateTime?
+  dateFinPromo   DateTime?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
   categorie   Categorie      @relation(fields: [categorieId], references: [id])
   variantes   Variante[]
   images      ProduitImage[]

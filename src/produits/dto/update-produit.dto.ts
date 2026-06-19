@@ -1,10 +1,10 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsBoolean,
+  IsDateString,
   IsDecimal,
   IsOptional,
   IsString,
-  IsUrl,
 } from 'class-validator';
 
 export class UpdateProduitDto {
@@ -37,4 +37,24 @@ export class UpdateProduitDto {
   @IsOptional()
   @IsBoolean()
   isActif?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  enPromo?: boolean;
+
+  @ApiPropertyOptional({ example: '9500.00' })
+  @IsOptional()
+  @IsDecimal({ decimal_digits: '1,2' })
+  prixPromo?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsDateString()
+  dateDebutPromo?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsDateString()
+  dateFinPromo?: string;
 }

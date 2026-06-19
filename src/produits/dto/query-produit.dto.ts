@@ -17,4 +17,9 @@ export class QueryProduitDto extends PaginationDto {
   @IsOptional()
   @IsBoolean()
   isActif?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  enPromo?: boolean;
 }

@@ -32,6 +32,7 @@ export class ProduitsService {
     const where: Prisma.ProduitWhereInput = {
       categorieId: query.categorieId,
       isActif: query.isActif,
+      enPromo: query.enPromo,
       ...(query.search
         ? {
             OR: [
@@ -129,6 +130,16 @@ export class ProduitsService {
           : undefined,
         imageUrl: dto.imageUrl,
         isActif: dto.isActif,
+        enPromo: dto.enPromo,
+        prixPromo: dto.prixPromo
+          ? new Prisma.Decimal(new Decimal(dto.prixPromo).toFixed(2))
+          : dto.enPromo === false ? null : undefined,
+        dateDebutPromo: dto.dateDebutPromo
+          ? new Date(dto.dateDebutPromo)
+          : dto.enPromo === false ? null : undefined,
+        dateFinPromo: dto.dateFinPromo
+          ? new Date(dto.dateFinPromo)
+          : dto.enPromo === false ? null : undefined,
       },
       include: PRODUIT_INCLUDE,
     });
