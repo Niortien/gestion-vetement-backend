@@ -24,6 +24,8 @@ import { CreateProduitDto } from './dto/create-produit.dto';
 import { UpdateProduitDto } from './dto/update-produit.dto';
 import { CreateProduitImageDto } from './dto/create-produit-image.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+import { RolesGuard } from '../common/guards/roles.guard';
+import { Roles } from '../common/decorators/roles.decorator';
 import { Public } from '../common/decorators/public.decorator';
 import { CurrentUser, AuthenticatedUser } from '../common/decorators/current-user.decorator';
 
@@ -31,18 +33,19 @@ function resolveBoutiqueId(
   user: AuthenticatedUser | undefined,
   queryBoutiqueId?: string,
 ): string | undefined {
-  if (!user) return undefined; // route publique vitrine → pas de filtre
+  if (!user) return undefined; // vitrine publique → pas de filtre boutique
   if (user.role !== 'ADMIN') return user.boutiqueId ?? undefined;
   return queryBoutiqueId ?? undefined;
 }
 
 @ApiTags('Produits')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('produits')
 export class ProduitsController {
   constructor(private readonly produitsService: ProduitsService) {}
 
+  // Lecture publique — le guard tente une auth optionnelle grâce au JwtAuthGuard modifié
   @Public()
   @Get()
   @ApiOperation({ summary: 'Lister les produits' })
@@ -77,35 +80,43 @@ export class ProduitsController {
     return this.produitsService.findById(id);
   }
 
+  // Création — vendeur (lié à sa boutique) ou admin (boutique libre)
   @Post()
   @ApiOperation({ summary: 'Creer un produit' })
-  @ApiQuery({ name: 'boutiqueId', required: false })
+  @ApiQuery({ name: 'boutiqueId', required: false, description: 'Admin uniquement : boutique cible (null = les deux)' })
   @ApiResponse({ status: 201, description: 'Produit cree' })
   async create(
     @Body() dto: CreateProduitDto,
     @CurrentUser() user: AuthenticatedUser,
     @Query('boutiqueId') queryBoutiqueId?: string,
   ) {
+    // VENDEUR → toujours sa propre boutique depuis le JWT
+    // ADMIN → boutiqueId du query param (null = produit sans boutique = catalogue global)
     const boutiqueId = user.role === 'ADMIN' ? (queryBoutiqueId ?? null) : user.boutiqueId;
     return this.produitsService.create(dto, boutiqueId);
   }
 
   @Patch(':id')
-  @ApiOperation({ summary: 'Mettre a jour un produit' })
+  @Roles('ADMIN')
+  @ApiOperation({ summary: 'Mettre a jour un produit (ADMIN)' })
   @ApiResponse({ status: 200, description: 'Produit mis a jour' })
+  @ApiResponse({ status: 403, description: 'Réservé aux admins' })
   async update(@Param('id') id: string, @Body() dto: UpdateProduitDto) {
     return this.produitsService.update(id, dto);
   }
 
   @Delete(':id')
-  @ApiOperation({ summary: 'Supprimer logiquement un produit' })
+  @Roles('ADMIN')
+  @ApiOperation({ summary: 'Supprimer logiquement un produit (ADMIN)' })
   @ApiResponse({ status: 200, description: 'Produit desactive' })
+  @ApiResponse({ status: 403, description: 'Réservé aux admins' })
   async softDelete(@Param('id') id: string) {
     return this.produitsService.softDelete(id);
   }
 
   @Post(':id/images')
-  @ApiOperation({ summary: 'Ajouter une image a un produit' })
+  @Roles('ADMIN')
+  @ApiOperation({ summary: 'Ajouter une image a un produit (ADMIN)' })
   @ApiResponse({ status: 201, description: 'Image ajoutee' })
   async addImage(
     @Param('id') id: string,
@@ -115,8 +126,9 @@ export class ProduitsController {
   }
 
   @Delete(':id/images/:imageId')
+  @Roles('ADMIN')
   @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiOperation({ summary: 'Supprimer une image d un produit' })
+  @ApiOperation({ summary: 'Supprimer une image d un produit (ADMIN)' })
   @ApiResponse({ status: 204, description: 'Image supprimee' })
   async removeImage(
     @Param('id') id: string,
