@@ -4,6 +4,7 @@ import Decimal from 'decimal.js';
 import { PrismaService } from '../prisma/prisma.service';
 import { PageDto } from '../common/dto/pagination.dto';
 import {
+  
   ConflictDomainException,
   NotFoundDomainException,
 } from '../common/exceptions/domain.exception';
