@@ -2,6 +2,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
   IsArray,
+  IsDateString,
   IsDecimal,
   IsInt,
   IsNotEmpty,
@@ -86,6 +87,11 @@ export class CreateEntreeDto {
   @IsOptional()
   @IsString()
   notes?: string;
+
+  @ApiPropertyOptional({ example: '2026-06-20', description: 'Date de l\'opération si différente d\'aujourd\'hui' })
+  @IsOptional()
+  @IsDateString()
+  dateOperation?: string;
 
   @ApiProperty({ type: [CreateLigneEntreeDto] })
   @IsArray()

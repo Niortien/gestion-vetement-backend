@@ -83,7 +83,7 @@ export class ProduitsService {
     return produit;
   }
 
-  async create(dto: CreateProduitDto, boutiqueId: string | null): Promise<Produit> {
+  async create(dto: CreateProduitDto, boutiqueIds: string[]): Promise<Produit> {
     const categorie = await this.prisma.categorie.findUnique({
       where: { id: dto.categorieId },
     });
@@ -95,6 +95,26 @@ export class ProduitsService {
       );
     }
 
+    // Si plusieurs boutiques, on duplique les variantes pour chaque boutique
+    const variantesCreate = dto.variantes
+      ? boutiqueIds.length > 0
+        ? boutiqueIds.flatMap((bid) =>
+            dto.variantes!.map((v) => ({
+              taille: v.taille,
+              couleur: v.couleur,
+              quantiteStock: v.quantiteStock,
+              seuilAlerte: v.seuilAlerte,
+              boutiqueId: bid,
+            })),
+          )
+        : dto.variantes.map((v) => ({
+            taille: v.taille,
+            couleur: v.couleur,
+            quantiteStock: v.quantiteStock,
+            seuilAlerte: v.seuilAlerte,
+          }))
+      : undefined;
+
     return this.prisma.produit.create({
       data: {
         nom: dto.nom,
@@ -104,17 +124,7 @@ export class ProduitsService {
         prixVente: new Prisma.Decimal(new Decimal(dto.prixVente).toFixed(2)),
         prixAchat: new Prisma.Decimal(new Decimal(dto.prixAchat).toFixed(2)),
         imageUrl: dto.imageUrl,
-        variantes: dto.variantes
-          ? {
-              create: dto.variantes.map((v) => ({
-                taille: v.taille,
-                couleur: v.couleur,
-                quantiteStock: v.quantiteStock,
-                seuilAlerte: v.seuilAlerte,
-                ...(boutiqueId ? { boutiqueId } : {}),
-              })),
-            }
-          : undefined,
+        variantes: variantesCreate ? { create: variantesCreate } : undefined,
       },
       include: PRODUIT_INCLUDE,
     });

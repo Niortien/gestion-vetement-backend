@@ -130,6 +130,7 @@ export class EntreesService {
           totalCout: new Prisma.Decimal(total.toFixed(2)),
           notes: dto.notes,
           userId,
+          ...(dto.dateOperation ? { createdAt: new Date(dto.dateOperation) } : {}),
           ...(boutiqueId ? { boutiqueId } : {}),
           lignes: {
             create: resolvedLines.map((line) => ({

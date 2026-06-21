@@ -83,17 +83,24 @@ export class ProduitsController {
   // Création — vendeur (lié à sa boutique) ou admin (boutique libre)
   @Post()
   @ApiOperation({ summary: 'Creer un produit' })
-  @ApiQuery({ name: 'boutiqueId', required: false, description: 'Admin uniquement : boutique cible (null = les deux)' })
+  @ApiQuery({ name: 'boutiqueIds', required: false, description: 'Admin : IDs boutiques séparés par virgule (vide = catalogue global)' })
   @ApiResponse({ status: 201, description: 'Produit cree' })
   async create(
     @Body() dto: CreateProduitDto,
     @CurrentUser() user: AuthenticatedUser,
-    @Query('boutiqueId') queryBoutiqueId?: string,
+    @Query('boutiqueIds') queryBoutiqueIds?: string,
   ) {
     // VENDEUR → toujours sa propre boutique depuis le JWT
-    // ADMIN → boutiqueId du query param (null = produit sans boutique = catalogue global)
-    const boutiqueId = user.role === 'ADMIN' ? (queryBoutiqueId ?? null) : user.boutiqueId;
-    return this.produitsService.create(dto, boutiqueId);
+    // ADMIN → boutiqueIds du query param (virgule séparée), vide = catalogue global
+    let boutiqueIds: string[];
+    if (user.role !== 'ADMIN') {
+      boutiqueIds = user.boutiqueId ? [user.boutiqueId] : [];
+    } else {
+      boutiqueIds = queryBoutiqueIds
+        ? queryBoutiqueIds.split(',').map((id) => id.trim()).filter(Boolean)
+        : [];
+    }
+    return this.produitsService.create(dto, boutiqueIds);
   }
 
   @Patch(':id')

@@ -3,6 +3,7 @@ import { Type } from 'class-transformer';
 import { TypeSortie } from '@prisma/client';
 import {
   IsArray,
+  IsDateString,
   IsDecimal,
   IsEnum,
   IsInt,
@@ -41,6 +42,11 @@ export class CreateSortieDto {
   @IsOptional()
   @IsDecimal({ decimal_digits: '1,2' })
   remiseMontant?: string;
+
+  @ApiPropertyOptional({ example: '2026-06-20', description: 'Date de l\'opération (non-VENTE uniquement)' })
+  @IsOptional()
+  @IsDateString()
+  dateOperation?: string;
 
   @ApiProperty({ type: [CreateLigneSortieDto] })
   @IsArray()

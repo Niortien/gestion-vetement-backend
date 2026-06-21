@@ -127,6 +127,7 @@ export class SortiesService {
             : {}),
           notes: dto.notes,
           userId,
+          ...(dto.type !== 'VENTE' && dto.dateOperation ? { createdAt: new Date(dto.dateOperation) } : {}),
           ...(boutiqueId ? { boutiqueId } : {}),
           lignes: {
             create: dto.lignes.map((line) => ({
