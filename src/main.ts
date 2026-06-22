@@ -38,6 +38,7 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api/v1/docs', app, document);
 
+  app.enableShutdownHooks();
   const port = Number(process.env.PORT ?? 8013);
   console.log('[STARTUP] 3 - listening on port', port);
   await app.listen(port);
