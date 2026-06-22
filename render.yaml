@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: habit-backend
+    runtime: node
+    buildCommand: pnpm install && pnpm build
+    startCommand: pnpm run start:prod
+    envVars:
+      - key: NODE_ENV
+        value: production
