@@ -1,3 +1,4 @@
+import { execSync } from 'child_process';
 import { NestFactory } from '@nestjs/core';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import helmet from 'helmet';
@@ -17,6 +18,17 @@ process.on('unhandledRejection', (reason) => {
 });
 
 async function bootstrap() {
+  try {
+    console.log('[STARTUP] prisma db push...');
+    execSync('node_modules/.bin/prisma db push --skip-generate --accept-data-loss', {
+      stdio: 'inherit',
+      cwd: process.cwd(),
+    });
+    console.log('[STARTUP] prisma db push done');
+  } catch (err) {
+    console.error('[STARTUP] prisma db push failed:', (err as Error).message);
+  }
+
   console.log(`[STARTUP] 1 - bootstrap start (PID ${process.pid})`);
   const app = await NestFactory.create(AppModule, { bodyParser: false });
   console.log('[STARTUP] 2 - app created');
