@@ -17,7 +17,7 @@ export class StockService {
       },
       taille: query.taille,
       couleur: query.couleur
-        ? { contains: query.couleur, mode: 'insensitive' }
+        ? { contains: query.couleur }
         : undefined,
       ...(query.alerte
         ? { quantiteStock: { lte: this.prisma.variante.fields.seuilAlerte } }

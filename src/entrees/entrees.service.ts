@@ -24,7 +24,7 @@ export class EntreesService {
     const where: Prisma.EntreeWhereInput = {
       ...(boutiqueId ? { boutiqueId } : {}),
       fournisseur: query.fournisseur
-        ? { contains: query.fournisseur, mode: 'insensitive' }
+        ? { contains: query.fournisseur }
         : undefined,
       createdAt:
         query.dateDebut || query.dateFin

@@ -45,8 +45,8 @@ export class ProduitsService {
       ...(query.search
         ? {
             OR: [
-              { nom: { contains: query.search, mode: 'insensitive' } },
-              { sku: { contains: query.search, mode: 'insensitive' } },
+              { nom: { contains: query.search } },
+              { sku: { contains: query.search } },
             ],
           }
         : {}),
