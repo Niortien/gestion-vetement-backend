@@ -8,6 +8,9 @@ import { AppValidationPipe } from './common/pipes/validation.pipe';
 
 async function bootstrap() {
   console.log('[STARTUP] Démarrage de l\'application...');
+  const dbUrl = process.env.DATABASE_URL ?? 'NON DÉFINI';
+  const masked = dbUrl.replace(/:([^@]+)@/, ':***@');
+  console.log('[STARTUP] DATABASE_URL =', masked);
   // bodyParser: false pour configurer manuellement la limite (images base64)
   const app = await NestFactory.create(AppModule, { bodyParser: false });
   app.use(json({ limit: '10mb' }));
