@@ -31,6 +31,13 @@ const catDefs = [
   { nom: 'Pantalon tissu',         slug: 'pantalon-tissu',         description: 'Bas' },
   { nom: 'Pantalon docker',        slug: 'pantalon-docker',        description: 'Bas' },
   { nom: 'Jogging',                slug: 'jogging',                description: 'Bas' },
+  { nom: 'Jean Simple',            slug: 'jean-simple',            description: 'Bas' },
+  { nom: 'Cargo',                  slug: 'cargo',                  description: 'Bas' },
+  // Culotte
+  { nom: 'Culotte Simple',         slug: 'culotte-simple',         description: 'Culotte' },
+  { nom: 'Culotte Away',           slug: 'culotte-away',           description: 'Culotte' },
+  { nom: 'Culotte Jean',           slug: 'culotte-jean',           description: 'Culotte' },
+  { nom: 'Pantacourt Asaké',       slug: 'pantacourt-asake',       description: 'Culotte' },
   // Chaussures
   { nom: 'Basket',                 slug: 'basket',                 description: 'Chaussures' },
   { nom: 'Barbouche',              slug: 'barbouche',              description: 'Chaussures' },
