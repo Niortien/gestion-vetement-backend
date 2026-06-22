@@ -9,6 +9,7 @@ import {
   IsUrl,
   MaxLength,
   Min,
+  ValidateIf,
   ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
@@ -64,6 +65,7 @@ export class CreateProduitDto {
 
   @ApiPropertyOptional()
   @IsOptional()
+  @ValidateIf((o) => o.imageUrl !== '')
   @IsUrl()
   imageUrl?: string;
 
