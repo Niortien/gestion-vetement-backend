@@ -7,6 +7,7 @@ import { AppModule } from './app.module';
 import { AppValidationPipe } from './common/pipes/validation.pipe';
 
 async function bootstrap() {
+  console.log('[STARTUP] Démarrage de l\'application...');
   // bodyParser: false pour configurer manuellement la limite (images base64)
   const app = await NestFactory.create(AppModule, { bodyParser: false });
   app.use(json({ limit: '10mb' }));
@@ -30,4 +31,7 @@ async function bootstrap() {
   const port = Number(process.env.PORT ?? 8013);
   await app.listen(port);
 }
-bootstrap();
+bootstrap().catch((err) => {
+  console.error('[STARTUP ERROR]', err);
+  process.exit(1);
+});
