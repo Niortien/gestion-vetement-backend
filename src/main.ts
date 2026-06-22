@@ -6,13 +6,20 @@ import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
 import { AppModule } from './app.module';
 import { AppValidationPipe } from './common/pipes/validation.pipe';
 
+process.on('uncaughtException', (err) => {
+  console.error('[UNCAUGHT EXCEPTION]', err?.message ?? err);
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (reason) => {
+  console.error('[UNHANDLED REJECTION]', reason);
+  process.exit(1);
+});
+
 async function bootstrap() {
-  console.log('[STARTUP] Démarrage de l\'application...');
-  const dbUrl = process.env.DATABASE_URL ?? 'NON DÉFINI';
-  const masked = dbUrl.replace(/:([^@]+)@/, ':***@');
-  console.log('[STARTUP] DATABASE_URL =', masked);
-  // bodyParser: false pour configurer manuellement la limite (images base64)
+  console.log('[STARTUP] 1 - bootstrap start');
   const app = await NestFactory.create(AppModule, { bodyParser: false });
+  console.log('[STARTUP] 2 - app created');
   app.use(json({ limit: '10mb' }));
   app.use(urlencoded({ extended: true, limit: '10mb' }));
   app.useLogger(app.get(WINSTON_MODULE_NEST_PROVIDER));
@@ -32,9 +39,12 @@ async function bootstrap() {
   SwaggerModule.setup('api/v1/docs', app, document);
 
   const port = Number(process.env.PORT ?? 8013);
+  console.log('[STARTUP] 3 - listening on port', port);
   await app.listen(port);
+  console.log('[STARTUP] 4 - app ready');
 }
+
 bootstrap().catch((err) => {
-  console.error('[STARTUP ERROR]', err);
+  console.error('[STARTUP ERROR]', err?.message ?? err);
   process.exit(1);
 });
