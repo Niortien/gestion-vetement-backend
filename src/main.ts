@@ -1,5 +1,3 @@
-import * as fs from 'fs';
-import * as path from 'path';
 import { NestFactory } from '@nestjs/core';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import helmet from 'helmet';
@@ -18,44 +16,7 @@ process.on('unhandledRejection', (reason) => {
   process.exit(1);
 });
 
-const LOCK_FILE = path.join(process.cwd(), '.startup.lock');
-
-async function acquireLock(): Promise<() => void> {
-  const maxWaitMs = 60_000;
-  const start = Date.now();
-
-  while (Date.now() - start < maxWaitMs) {
-    try {
-      const fd = fs.openSync(LOCK_FILE, 'wx');
-      fs.writeSync(fd, String(process.pid));
-      fs.closeSync(fd);
-      const release = () => { try { fs.unlinkSync(LOCK_FILE); } catch {} };
-      process.on('exit', release);
-      process.on('SIGTERM', () => { release(); process.exit(0); });
-      process.on('SIGINT', () => { release(); process.exit(0); });
-      console.log(`[STARTUP] Lock acquired (PID ${process.pid})`);
-      return release;
-    } catch {
-      try {
-        const raw = fs.readFileSync(LOCK_FILE, 'utf8').trim();
-        const pid = parseInt(raw);
-        if (!isNaN(pid)) {
-          process.kill(pid, 0);
-          console.log(`[STARTUP] Waiting for PID ${pid} to finish...`);
-          await new Promise((r) => setTimeout(r, 3000));
-          continue;
-        }
-      } catch {
-        // Stale lock — remove and retry
-      }
-      try { fs.unlinkSync(LOCK_FILE); } catch {}
-    }
-  }
-  throw new Error('Could not acquire startup lock after 60s');
-}
-
 async function bootstrap() {
-  await acquireLock();
   console.log(`[STARTUP] 1 - bootstrap start (PID ${process.pid})`);
   const app = await NestFactory.create(AppModule, { bodyParser: false });
   console.log('[STARTUP] 2 - app created');

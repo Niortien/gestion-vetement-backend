@@ -12,31 +12,9 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
   }
 
   async onModuleInit(): Promise<void> {
-    const maxAttempts = 5;
-    const connectTimeoutMs = 8000;
-
-    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-      try {
-        await Promise.race([
-          this.$connect(),
-          new Promise<never>((_, reject) =>
-            setTimeout(
-              () => reject(new Error(`DB connect timeout after ${connectTimeoutMs}ms`)),
-              connectTimeoutMs,
-            ),
-          ),
-        ]);
-        this.logger.log('Database connected');
-        return;
-      } catch (err) {
-        const isLast = attempt === maxAttempts;
-        this.logger.warn(
-          `DB connect attempt ${attempt}/${maxAttempts} failed: ${(err as Error).message}`,
-        );
-        if (isLast) throw err;
-        await new Promise((r) => setTimeout(r, attempt * 1000));
-      }
-    }
+    // Lazy connection — Prisma connects on first query.
+    // Avoids Tokio timer panics when multiple containers start simultaneously.
+    this.logger.log('PrismaService ready (lazy connection)');
   }
 
   async onModuleDestroy(): Promise<void> {
