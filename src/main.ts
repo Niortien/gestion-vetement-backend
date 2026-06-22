@@ -17,7 +17,7 @@ process.on('unhandledRejection', (reason) => {
 });
 
 async function bootstrap() {
-  console.log('[STARTUP] 1 - bootstrap start');
+  console.log(`[STARTUP] 1 - bootstrap start (PID ${process.pid})`);
   const app = await NestFactory.create(AppModule, { bodyParser: false });
   console.log('[STARTUP] 2 - app created');
   app.use(json({ limit: '10mb' }));
@@ -42,7 +42,7 @@ async function bootstrap() {
   const port = Number(process.env.PORT ?? 8013);
   console.log('[STARTUP] 3 - listening on port', port);
   await app.listen(port);
-  console.log('[STARTUP] 4 - app ready');
+  console.log(`[STARTUP] 4 - app ready (PID ${process.pid})`);
 }
 
 bootstrap().catch((err) => {
