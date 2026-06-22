@@ -26,6 +26,19 @@ export class CloudinaryService {
     });
   }
 
+  async uploadBase64(dataUrl: string, folder = 'produits'): Promise<string> {
+    return new Promise((resolve, reject) => {
+      cloudinary.uploader.upload(
+        dataUrl,
+        { folder, resource_type: 'image' },
+        (error, result) => {
+          if (error || !result) return reject(error ?? new Error('Upload failed'));
+          resolve(result.secure_url);
+        },
+      );
+    });
+  }
+
   async deleteByUrl(url: string): Promise<void> {
     const match = url.match(/\/upload\/(?:v\d+\/)?(.+)\.[a-z]+$/i);
     if (match) await cloudinary.uploader.destroy(match[1]);

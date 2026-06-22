@@ -99,6 +99,11 @@ export class ProduitsService {
       );
     }
 
+    let imageUrl = dto.imageUrl;
+    if (imageUrl?.startsWith('data:')) {
+      imageUrl = await this.cloudinary.uploadBase64(imageUrl);
+    }
+
     // Si plusieurs boutiques, on duplique les variantes pour chaque boutique
     const variantesCreate = dto.variantes
       ? boutiqueIds.length > 0
@@ -127,7 +132,7 @@ export class ProduitsService {
         categorieId: dto.categorieId,
         prixVente: new Prisma.Decimal(new Decimal(dto.prixVente).toFixed(2)),
         prixAchat: new Prisma.Decimal(new Decimal(dto.prixAchat).toFixed(2)),
-        imageUrl: dto.imageUrl,
+        imageUrl,
         variantes: variantesCreate ? { create: variantesCreate } : undefined,
       },
       include: PRODUIT_INCLUDE,
@@ -136,6 +141,11 @@ export class ProduitsService {
 
   async update(id: string, dto: UpdateProduitDto): Promise<Produit> {
     await this.findById(id);
+
+    let imageUrl = dto.imageUrl;
+    if (typeof imageUrl === 'string' && imageUrl.startsWith('data:')) {
+      imageUrl = await this.cloudinary.uploadBase64(imageUrl);
+    }
 
     return this.prisma.produit.update({
       where: { id },
@@ -148,7 +158,7 @@ export class ProduitsService {
         prixAchat: dto.prixAchat
           ? new Prisma.Decimal(new Decimal(dto.prixAchat).toFixed(2))
           : undefined,
-        imageUrl: dto.imageUrl,
+        imageUrl,
         isActif: dto.isActif,
         enPromo: dto.enPromo,
         prixPromo: dto.prixPromo
