@@ -1,4 +1,5 @@
 import * as fs from 'fs';
+import * as path from 'path';
 import { NestFactory } from '@nestjs/core';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import helmet from 'helmet';
@@ -17,7 +18,7 @@ process.on('unhandledRejection', (reason) => {
   process.exit(1);
 });
 
-const LOCK_FILE = '/tmp/finc-backend.lock';
+const LOCK_FILE = path.join(process.cwd(), '.startup.lock');
 
 async function acquireLock(): Promise<() => void> {
   const maxWaitMs = 60_000;
