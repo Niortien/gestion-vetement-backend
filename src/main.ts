@@ -20,13 +20,13 @@ process.on('unhandledRejection', (reason) => {
 async function bootstrap() {
   try {
     console.log('[STARTUP] prisma db push...');
-    execSync('node_modules/.bin/prisma db push --skip-generate --accept-data-loss', {
-      stdio: 'inherit',
-      cwd: process.cwd(),
-    });
+    execSync(
+      `"${process.execPath}" node_modules/prisma/build/index.js db push --skip-generate --accept-data-loss`,
+      { stdio: 'inherit', cwd: process.cwd() },
+    );
     console.log('[STARTUP] prisma db push done');
-  } catch (err) {
-    console.error('[STARTUP] prisma db push failed:', (err as Error).message);
+  } catch (err: any) {
+    console.error('[STARTUP] prisma db push failed:', err.stderr?.toString() || err.message);
   }
 
   console.log(`[STARTUP] 1 - bootstrap start (PID ${process.pid})`);
