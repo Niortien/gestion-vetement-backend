@@ -64,7 +64,7 @@ export class CreateProduitDto {
 
   @ApiPropertyOptional()
   @IsOptional()
-  @IsString()
+  @IsUrl()
   imageUrl?: string;
 
   @ApiPropertyOptional({ type: [CreateVarianteDto] })

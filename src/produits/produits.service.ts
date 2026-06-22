@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { Prisma, Produit } from '@prisma/client';
 import Decimal from 'decimal.js';
 import { PrismaService } from '../prisma/prisma.service';
+import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { PageDto } from '../common/dto/pagination.dto';
 import { NotFoundDomainException } from '../common/exceptions/domain.exception';
 import { QueryProduitDto } from './dto/query-produit.dto';
@@ -18,7 +19,10 @@ const PRODUIT_INCLUDE = {
 
 @Injectable()
 export class ProduitsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly cloudinary: CloudinaryService,
+  ) {}
 
   private generateSku(categorieSlug: string): string {
     return `VET-${categorieSlug.toUpperCase().slice(0, 3)}-${Math.floor(Date.now() / 1000)}`;
@@ -170,8 +174,9 @@ export class ProduitsService {
     });
   }
 
-  async addImage(produitId: string, url: string) {
+  async addImage(produitId: string, file: Express.Multer.File) {
     await this.findById(produitId);
+    const url = await this.cloudinary.uploadBuffer(file.buffer);
     return this.prisma.produitImage.create({ data: { produitId, url } });
   }
 
@@ -180,6 +185,7 @@ export class ProduitsService {
     if (!img || img.produitId !== produitId) {
       throw new NotFoundDomainException('Image introuvable', 'IMAGE_NOT_FOUND');
     }
+    await this.cloudinary.deleteByUrl(img.url);
     return this.prisma.produitImage.delete({ where: { id: imageId } });
   }
 

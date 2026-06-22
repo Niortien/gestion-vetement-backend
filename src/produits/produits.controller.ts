@@ -8,21 +8,26 @@ import {
   Post,
   Query,
   UseGuards,
+  UseInterceptors,
+  UploadedFile,
   HttpCode,
   HttpStatus,
+  BadRequestException,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import {
   ApiBearerAuth,
   ApiOperation,
   ApiQuery,
   ApiResponse,
   ApiTags,
+  ApiConsumes,
+  ApiBody,
 } from '@nestjs/swagger';
 import { ProduitsService } from './produits.service';
 import { QueryProduitDto } from './dto/query-produit.dto';
 import { CreateProduitDto } from './dto/create-produit.dto';
 import { UpdateProduitDto } from './dto/update-produit.dto';
-import { CreateProduitImageDto } from './dto/create-produit-image.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
@@ -123,13 +128,17 @@ export class ProduitsController {
 
   @Post(':id/images')
   @Roles('ADMIN')
+  @UseInterceptors(FileInterceptor('file'))
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({ schema: { type: 'object', properties: { file: { type: 'string', format: 'binary' } } } })
   @ApiOperation({ summary: 'Ajouter une image a un produit (ADMIN)' })
   @ApiResponse({ status: 201, description: 'Image ajoutee' })
   async addImage(
     @Param('id') id: string,
-    @Body() dto: CreateProduitImageDto,
+    @UploadedFile() file: Express.Multer.File,
   ) {
-    return this.produitsService.addImage(id, dto.url);
+    if (!file) throw new BadRequestException('Fichier image requis');
+    return this.produitsService.addImage(id, file);
   }
 
   @Delete(':id/images/:imageId')
