@@ -20,20 +20,6 @@ process.on('unhandledRejection', (reason) => {
 });
 
 async function bootstrap() {
-  // schema.prisma is copied to dist/ during build so it's available at runtime
-  const schemaPath = path.join(__dirname, 'schema.prisma');
-
-  try {
-    console.log('[STARTUP] prisma db push...');
-    execSync(
-      `"${process.execPath}" node_modules/prisma/build/index.js db push --skip-generate --accept-data-loss --schema "${schemaPath}"`,
-      { stdio: 'inherit', cwd: process.cwd() },
-    );
-    console.log('[STARTUP] prisma db push done');
-  } catch (err: any) {
-    console.error('[STARTUP] prisma db push failed:', err.stderr?.toString() || err.message);
-  }
-
   const seedPath = path.join(__dirname, 'prisma', 'seed-categories.js');
   if (existsSync(seedPath)) {
     try {
