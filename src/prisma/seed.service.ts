@@ -44,6 +44,31 @@ const CATEGORIES = [
   { nom: 'Lunette',                slug: 'lunette',                description: 'Parfum & Bijoux' },
 ];
 
+// Applies FK cascade deletes that prisma db push cannot run on Hostinger (EAGAIN).
+// Each statement is idempotent: drops old FK then recreates with ON DELETE CASCADE.
+const CASCADE_MIGRATIONS = [
+  `ALTER TABLE \`Variante\`
+     DROP FOREIGN KEY \`Variante_produitId_fkey\`,
+     ADD CONSTRAINT \`Variante_produitId_fkey\`
+       FOREIGN KEY (\`produitId\`) REFERENCES \`Produit\` (\`id\`)
+       ON DELETE CASCADE ON UPDATE CASCADE`,
+  `ALTER TABLE \`MouvementStock\`
+     DROP FOREIGN KEY \`MouvementStock_varianteId_fkey\`,
+     ADD CONSTRAINT \`MouvementStock_varianteId_fkey\`
+       FOREIGN KEY (\`varianteId\`) REFERENCES \`Variante\` (\`id\`)
+       ON DELETE CASCADE ON UPDATE CASCADE`,
+  `ALTER TABLE \`LigneEntree\`
+     DROP FOREIGN KEY \`LigneEntree_varianteId_fkey\`,
+     ADD CONSTRAINT \`LigneEntree_varianteId_fkey\`
+       FOREIGN KEY (\`varianteId\`) REFERENCES \`Variante\` (\`id\`)
+       ON DELETE CASCADE ON UPDATE CASCADE`,
+  `ALTER TABLE \`LigneSortie\`
+     DROP FOREIGN KEY \`LigneSortie_varianteId_fkey\`,
+     ADD CONSTRAINT \`LigneSortie_varianteId_fkey\`
+       FOREIGN KEY (\`varianteId\`) REFERENCES \`Variante\` (\`id\`)
+       ON DELETE CASCADE ON UPDATE CASCADE`,
+];
+
 @Injectable()
 export class SeedService implements OnApplicationBootstrap {
   private readonly logger = new Logger(SeedService.name);
@@ -51,6 +76,22 @@ export class SeedService implements OnApplicationBootstrap {
   constructor(private readonly prisma: PrismaService) {}
 
   async onApplicationBootstrap(): Promise<void> {
+    await this.applyCascades();
+    await this.seedCategories();
+  }
+
+  private async applyCascades(): Promise<void> {
+    for (const sql of CASCADE_MIGRATIONS) {
+      try {
+        await this.prisma.$executeRawUnsafe(sql);
+      } catch {
+        // FK already has CASCADE or constraint name differs — safe to ignore
+      }
+    }
+    this.logger.log('FK cascade constraints applied');
+  }
+
+  private async seedCategories(): Promise<void> {
     try {
       for (const cat of CATEGORIES) {
         await this.prisma.categorie.upsert({
