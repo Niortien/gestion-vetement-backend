@@ -1,4 +1,5 @@
 import { execSync } from 'child_process';
+import * as path from 'path';
 import { NestFactory } from '@nestjs/core';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import helmet from 'helmet';
@@ -20,8 +21,10 @@ process.on('unhandledRejection', (reason) => {
 async function bootstrap() {
   try {
     console.log('[STARTUP] prisma db push...');
+    // schema.prisma is copied to dist/ during build so it's available at runtime
+    const schemaPath = path.join(__dirname, 'schema.prisma');
     execSync(
-      `"${process.execPath}" node_modules/prisma/build/index.js db push --skip-generate --accept-data-loss`,
+      `"${process.execPath}" node_modules/prisma/build/index.js db push --skip-generate --accept-data-loss --schema "${schemaPath}"`,
       { stdio: 'inherit', cwd: process.cwd() },
     );
     console.log('[STARTUP] prisma db push done');

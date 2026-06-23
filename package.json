@@ -6,7 +6,7 @@
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
-    "build": "prisma generate && nest build",
+    "build": "prisma generate && nest build && node -e \"require('fs').copyFileSync('src/prisma/schema.prisma','dist/schema.prisma')\"",
     "dev": "nest start --watch",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "seed": "ts-node src/prisma/seed.ts",
