@@ -1,4 +1,5 @@
 import { execSync } from 'child_process';
+import { existsSync } from 'fs';
 import * as path from 'path';
 import { NestFactory } from '@nestjs/core';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
@@ -19,10 +20,11 @@ process.on('unhandledRejection', (reason) => {
 });
 
 async function bootstrap() {
+  // schema.prisma is copied to dist/ during build so it's available at runtime
+  const schemaPath = path.join(__dirname, 'schema.prisma');
+
   try {
     console.log('[STARTUP] prisma db push...');
-    // schema.prisma is copied to dist/ during build so it's available at runtime
-    const schemaPath = path.join(__dirname, 'schema.prisma');
     execSync(
       `"${process.execPath}" node_modules/prisma/build/index.js db push --skip-generate --accept-data-loss --schema "${schemaPath}"`,
       { stdio: 'inherit', cwd: process.cwd() },
@@ -30,6 +32,17 @@ async function bootstrap() {
     console.log('[STARTUP] prisma db push done');
   } catch (err: any) {
     console.error('[STARTUP] prisma db push failed:', err.stderr?.toString() || err.message);
+  }
+
+  const seedPath = path.join(__dirname, 'prisma', 'seed-categories.js');
+  if (existsSync(seedPath)) {
+    try {
+      console.log('[STARTUP] seed categories...');
+      execSync(`"${process.execPath}" "${seedPath}"`, { stdio: 'inherit', cwd: process.cwd() });
+      console.log('[STARTUP] seed categories done');
+    } catch (err: any) {
+      console.error('[STARTUP] seed categories failed:', err.stderr?.toString() || err.message);
+    }
   }
 
   console.log(`[STARTUP] 1 - bootstrap start (PID ${process.pid})`);
