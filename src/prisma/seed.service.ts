@@ -57,8 +57,7 @@ export class SeedService implements OnApplicationBootstrap {
   constructor(private readonly prisma: PrismaService) {}
 
   onApplicationBootstrap(): void {
-    // Run in background — does not block app startup or incoming requests
-    setImmediate(() => this.run());
+    setImmediate(() => this.run().catch((err) => this.logger.error('Seed crashed', err?.message)));
   }
 
   private async run(): Promise<void> {
