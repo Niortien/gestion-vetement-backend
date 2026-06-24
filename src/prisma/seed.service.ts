@@ -1,5 +1,11 @@
 import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
+import * as bcrypt from 'bcrypt';
 import { PrismaService } from './prisma.service';
+
+const DEFAULT_USERS = [
+  { email: 'admin@shop.com',   password: 'StrongPass123!', role: 'ADMIN'   as const },
+  { email: 'vendeur@shop.com', password: 'StrongPass123!', role: 'VENDEUR' as const },
+];
 
 const CATEGORIES = [
   { nom: 'Tee-shirt',              slug: 'tee-shirt',              description: 'Hauts' },
@@ -15,7 +21,7 @@ const CATEGORIES = [
   { nom: 'Doudoune',               slug: 'doudoune',               description: 'Chemises & Vestes' },
   { nom: 'Complet-culotte',        slug: 'complet-culotte',        description: 'Tenues' },
   { nom: 'Complet-pantalon',       slug: 'complet-pantalon',       description: 'Tenues' },
-  { nom: 'Complet-pull',           slug: 'complet-pull',           description: 'Tenues' },
+  { nom: 'Complet-pull',           slug: 'complet-pull',           description: 'Pulls & Maillots' },
   { nom: 'Complet sous-vêtement',  slug: 'complet-sous-vetement',  description: 'Tenues' },
   { nom: 'Pull simple',            slug: 'pull-simple',            description: 'Pulls & Maillots' },
   { nom: 'Pull cardigan',          slug: 'pull-cardigan',          description: 'Pulls & Maillots' },
@@ -44,51 +50,35 @@ const CATEGORIES = [
   { nom: 'Lunette',                slug: 'lunette',                description: 'Parfum & Bijoux' },
 ];
 
-// Applies FK cascade deletes that prisma db push cannot run on Hostinger (EAGAIN).
-// Each statement is idempotent: drops old FK then recreates with ON DELETE CASCADE.
-const CASCADE_MIGRATIONS = [
-  `ALTER TABLE \`Variante\`
-     DROP FOREIGN KEY \`Variante_produitId_fkey\`,
-     ADD CONSTRAINT \`Variante_produitId_fkey\`
-       FOREIGN KEY (\`produitId\`) REFERENCES \`Produit\` (\`id\`)
-       ON DELETE CASCADE ON UPDATE CASCADE`,
-  `ALTER TABLE \`MouvementStock\`
-     DROP FOREIGN KEY \`MouvementStock_varianteId_fkey\`,
-     ADD CONSTRAINT \`MouvementStock_varianteId_fkey\`
-       FOREIGN KEY (\`varianteId\`) REFERENCES \`Variante\` (\`id\`)
-       ON DELETE CASCADE ON UPDATE CASCADE`,
-  `ALTER TABLE \`LigneEntree\`
-     DROP FOREIGN KEY \`LigneEntree_varianteId_fkey\`,
-     ADD CONSTRAINT \`LigneEntree_varianteId_fkey\`
-       FOREIGN KEY (\`varianteId\`) REFERENCES \`Variante\` (\`id\`)
-       ON DELETE CASCADE ON UPDATE CASCADE`,
-  `ALTER TABLE \`LigneSortie\`
-     DROP FOREIGN KEY \`LigneSortie_varianteId_fkey\`,
-     ADD CONSTRAINT \`LigneSortie_varianteId_fkey\`
-       FOREIGN KEY (\`varianteId\`) REFERENCES \`Variante\` (\`id\`)
-       ON DELETE CASCADE ON UPDATE CASCADE`,
-];
-
 @Injectable()
 export class SeedService implements OnApplicationBootstrap {
   private readonly logger = new Logger(SeedService.name);
 
   constructor(private readonly prisma: PrismaService) {}
 
-  async onApplicationBootstrap(): Promise<void> {
-    await this.applyCascades();
+  onApplicationBootstrap(): void {
+    // Run in background — does not block app startup or incoming requests
+    setImmediate(() => this.run());
+  }
+
+  private async run(): Promise<void> {
+    await this.seedUsers();
     await this.seedCategories();
   }
 
-  private async applyCascades(): Promise<void> {
-    for (const sql of CASCADE_MIGRATIONS) {
-      try {
-        await this.prisma.$executeRawUnsafe(sql);
-      } catch {
-        // FK already has CASCADE or constraint name differs — safe to ignore
+  private async seedUsers(): Promise<void> {
+    try {
+      for (const u of DEFAULT_USERS) {
+        const existing = await this.prisma.user.findUnique({ where: { email: u.email } });
+        if (!existing) {
+          const passwordHash = await bcrypt.hash(u.password, 12);
+          await this.prisma.user.create({ data: { email: u.email, passwordHash, role: u.role } });
+          this.logger.log(`User created: ${u.email} (${u.role})`);
+        }
       }
+    } catch (err: any) {
+      this.logger.error('User seed failed', err?.message);
     }
-    this.logger.log('FK cascade constraints applied');
   }
 
   private async seedCategories(): Promise<void> {
