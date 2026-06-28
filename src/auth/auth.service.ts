@@ -54,13 +54,13 @@ export class AuthService {
         secret: this.configService.getOrThrow<string>('jwtSecret', {
           infer: true,
         }),
-        expiresIn: '15m',
+        expiresIn: this.configService.getOrThrow<string>('jwtTtl', { infer: true }),
       }),
       refreshToken: await this.jwtService.signAsync(payload, {
         secret: this.configService.getOrThrow<string>('jwtRefreshSecret', {
           infer: true,
         }),
-        expiresIn: '7d',
+        expiresIn: this.configService.getOrThrow<string>('jwtRefreshTtl', { infer: true }),
       }),
       user: {
         id: user.id,
@@ -95,7 +95,7 @@ export class AuthService {
           secret: this.configService.getOrThrow<string>('jwtSecret', {
             infer: true,
           }),
-          expiresIn: '15m',
+          expiresIn: this.configService.getOrThrow<string>('jwtTtl', { infer: true }),
         },
       );
 

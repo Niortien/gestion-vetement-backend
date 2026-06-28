@@ -18,7 +18,7 @@ import { UsersModule } from '../users/users.module';
       useFactory: (configService: ConfigService) => ({
         secret: configService.getOrThrow<string>('jwtSecret', { infer: true }),
         signOptions: {
-          expiresIn: '15m',
+          expiresIn: configService.getOrThrow<string>('jwtTtl', { infer: true }),
         },
       }),
     }),
